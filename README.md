@@ -6,7 +6,7 @@
 
 ## 3. npm run compile (빌드)
 
-## 4. F5 -> VSCode 확장 개발 or VScode extension development
+## 4. src/extension.ts에서 F5 -> VSCode 확장 개발 or VScode extension development
 
 ## 5. 원하는 함수, 영역 드래그
 
