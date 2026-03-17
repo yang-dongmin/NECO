@@ -14,8 +14,8 @@
   "contributes": {
     "commands": [
       {
-        "command": "neco.helloWorld",
-        "title": "Hello World"
+        "command": "neco.addComment",
+        "title": "Neco"
       }
     ]
   },

@@ -1,26 +1,63 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
 	console.log('Congratulations, your extension "neco" is now active!');
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	const disposable = vscode.commands.registerCommand('neco.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from Neco!');
+	const disposable = vscode.commands.registerCommand('neco.addComment', async () => {
+
+		// 현재 열려있는 파일 가져오는 변수
+		const editor = vscode.window.activeTextEditor;
+
+		if (!editor) {
+			vscode.window.showErrorMessage('열린 파일이 없습니다!');
+			return;
+		}
+
+		// 드래그한 영역 정보
+		const selection = editor.selection;
+
+		// 선택한 텍스트 실제 내용
+		const selectedText = editor.document.getText(selection);
+
+		if (!selectedText) {
+			vscode.window.showErrorMessage('코드를 선택해주세요!');
+			return;
+		}
+
+		console.log('선택한 코드:', selectedText);
+
+		// 언어 구분 변수
+		const languageId = editor.document.languageId;
+
+		console.log('언어 : ', languageId);
+
+		// 언어별 주석 스타일
+		const commentMap: { [key: string]: string } = {
+			python: '# [py] : ',
+			javascript: '// [js] : ',
+			cpp: '// [c++] : ',
+			c: '// [c] : '
+		};
+
+		const commentPrefix = commentMap[languageId] ?? '//';
+
+		// 선택 영역 시작 줄 번호
+		const startLine = selection.start.line;
+
+		const position = new vscode.Position(startLine, 0);
+
+		const comment = `${commentPrefix} 이 코드는 선택된 코드입니다\n`;
+
+		// 실제 주석 삽입
+		await editor.edit(editBuilder => {
+			editBuilder.insert(position, comment);
+		});
+
+		vscode.window.showInformationMessage('주석 삽입 완료!');
 	});
 
 	context.subscriptions.push(disposable);
 }
 
-// This method is called when your extension is deactivated
-export function deactivate() {}
+export function deactivate() { }
