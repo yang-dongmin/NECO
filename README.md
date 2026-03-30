@@ -15,3 +15,17 @@
 ## 7. Neco 검색 후 실행
 
 ## 8. 주석 생성
+
+# 리액트
+
+## 1. cd webview
+
+## 2. npm install
+
+## 3. npm run build
+
+## 4. Ctrl + Shift + P or Cmd + Shift + P
+
+## 5. Open NECO Webview
+
+## 6. WebView 사이드로 옮기고 코드 드래그

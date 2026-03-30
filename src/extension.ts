@@ -1,4 +1,8 @@
 import * as vscode from 'vscode';
+import fs from 'fs';
+import path from 'path';
+
+let panel: vscode.WebviewPanel | undefined;
 
 async function addCommentFromSelection() {
 	// 현재 열려있는 파일 가져오는 변수
@@ -50,17 +54,99 @@ async function addCommentFromSelection() {
 	});
 }
 
+
+function getWebviewContent(webview: vscode.Webview, context: vscode.ExtensionContext) {
+
+	const distPath = path.join(context.extensionUri.fsPath, 'webview/dist/assets');
+
+	const files = fs.readdirSync(distPath);
+
+	const jsFile = files.find(f => f.endsWith('.js'));
+	const cssFile = files.find(f => f.endsWith('.css'));
+
+	const scriptUri = webview.asWebviewUri(
+		vscode.Uri.joinPath(context.extensionUri, 'webview/dist/assets', jsFile!)
+	);
+
+	const styleUri = webview.asWebviewUri(
+		vscode.Uri.joinPath(context.extensionUri, 'webview/dist/assets', cssFile!)
+	);
+
+	return `
+	<!DOCTYPE html>
+	<html>
+	<head>
+		<link rel="stylesheet" href="${styleUri}">
+	</head>
+	<body>
+		<div id="root"></div>
+		<script type="module" src="${scriptUri}"></script>
+	</body>
+	</html>
+	`;
+}
+
+function openWebview(context: vscode.ExtensionContext) {
+
+	panel = vscode.window.createWebviewPanel(
+		'necoView',
+		'NECO Code Helper',
+		vscode.ViewColumn.One,
+		{ enableScripts: true }
+	);
+
+	const editor = vscode.window.activeTextEditor;
+	if (!editor) return;
+
+	const selectedText = editor.document.getText(editor.selection);
+
+	panel.webview.html = getWebviewContent(panel.webview, context);
+
+	panel.webview.postMessage({
+		type: 'setCode',
+		text: selectedText
+	});
+}
+
+function handleSelectionChange() {
+
+	vscode.window.onDidChangeTextEditorSelection(() => {
+
+		if (!panel) return;
+
+		const editor = vscode.window.activeTextEditor;
+		if (!editor) return;
+
+		const text = editor.document.getText(editor.selection);
+
+		panel.webview.postMessage({
+			type: 'setCode',
+			text: text
+		});
+	});
+}
+
 export function activate(context: vscode.ExtensionContext) {
 
-	console.log('Congratulations, your extension "neco" is now active!');
+	console.log('NECO extension activated!');
 
-	const disposable = vscode.commands.registerCommand('neco.addComment', async () => {
-		
-		await addCommentFromSelection();
-		vscode.window.showInformationMessage('주석 삽입 완료!');
-	});
+	const commentCmd = vscode.commands.registerCommand(
+		'neco.addComment',
+		addCommentFromSelection
+	);
 
-	context.subscriptions.push(disposable);
+	const openWebviewCmd = vscode.commands.registerCommand(
+		'neco.openWebview',
+		() => openWebview(context)
+	);
+
+	handleSelectionChange();
+
+	context.subscriptions.push(commentCmd);
+	context.subscriptions.push(openWebviewCmd);
+
 }
 
 export function deactivate() { }
+
+

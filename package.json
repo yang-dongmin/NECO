@@ -16,6 +16,10 @@
       {
         "command": "neco.addComment",
         "title": "Neco"
+      },
+      {
+        "command": "neco.openWebview",
+        "title": "Open NECO Webview"
       }
     ]
   },
