@@ -4,7 +4,6 @@ function App() {
     useEffect(() => {
         // const vscode = acquireVsCodeApi();
         const handler = (event) => {
-            console.log('🔥 메시지 수신:', event.data);
             const message = event.data;
             if (message.type === 'setCode') {
                 console.log("받음:", message.text);

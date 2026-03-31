@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import fs from 'fs';
 import path from 'path';
+import { NecoViewProvider } from './NecoViewProvider';
 
 let panel: vscode.WebviewPanel | undefined;
 
@@ -135,15 +136,18 @@ export function activate(context: vscode.ExtensionContext) {
 		addCommentFromSelection
 	);
 
-	const openWebviewCmd = vscode.commands.registerCommand(
-		'neco.openWebview',
-		() => openWebview(context)
+	const provider = new NecoViewProvider(context.extensionUri);
+
+	context.subscriptions.push(
+		vscode.window.registerWebviewViewProvider(
+			'necoSidebarView', // package.json이랑 반드시 동일
+			provider
+		)
 	);
 
 	handleSelectionChange();
 
 	context.subscriptions.push(commentCmd);
-	context.subscriptions.push(openWebviewCmd);
 
 }
 

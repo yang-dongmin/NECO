@@ -9,8 +9,7 @@ function App() {
     // const vscode = acquireVsCodeApi();
 
     const handler = (event: MessageEvent) => {
-      console.log('🔥 메시지 수신:', event.data);
-
+      
       const message = event.data;
       
       if (message.type === 'setCode') {
