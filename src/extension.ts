@@ -58,11 +58,14 @@ function getWebviewContent(webview: vscode.Webview, context: vscode.ExtensionCon
 
 	const distPath = path.join(context.extensionUri.fsPath, 'webview/dist/assets');
 
+	// dist 폴더 파일 목록 읽기
 	const files = fs.readdirSync(distPath);
 
+	// 빌드 된 Js, Css 찾기
 	const jsFile = files.find(f => f.endsWith('.js'));
 	const cssFile = files.find(f => f.endsWith('.css'));
 
+	// VScode에서 접근 가능하게 변환
 	const scriptUri = webview.asWebviewUri(
 		vscode.Uri.joinPath(context.extensionUri, 'webview/dist/assets', jsFile!)
 	);
@@ -92,9 +95,11 @@ function handleSelectionChange(provider: NecoViewProvider) {
 
 		const editor = vscode.window.activeTextEditor;
 		if (!editor) return;
-
+ 
+		// 현재 선택된 코드 가져오기
 		const text = editor.document.getText(editor.selection);
 
+		// React로 데이터 보내기
 		provider.sendMessage('setCode', text);
 
 	});
@@ -105,10 +110,11 @@ export function activate(context: vscode.ExtensionContext) {
 	console.log('NECO extension activated!');
 
 	const commentCmd = vscode.commands.registerCommand(
-		'neco.addComment',
-		addCommentFromSelection
+		'neco.addComment', // 명령어 이름
+		addCommentFromSelection // 명령어 실행 시 호출
 	);
 
+	// 사이드바 생성 객체
 	const provider = new NecoViewProvider(context.extensionUri);
 
 	context.subscriptions.push(
@@ -118,6 +124,7 @@ export function activate(context: vscode.ExtensionContext) {
 		)
 	);
 
+	// 이벤트 연결
 	handleSelectionChange(provider);
 
 	context.subscriptions.push(commentCmd);
