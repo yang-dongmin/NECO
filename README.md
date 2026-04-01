@@ -24,8 +24,4 @@
 
 ## 3. npm run build
 
-## 4. Ctrl + Shift + P or Cmd + Shift + P
-
-## 5. Open NECO Webview
-
-## 6. WebView 사이드로 옮기고 코드 드래그
+## 4. 코드 선택 = 선택 영역 웹뷰 표시

@@ -3,8 +3,6 @@ import fs from 'fs';
 import path from 'path';
 import { NecoViewProvider } from './NecoViewProvider';
 
-let panel: vscode.WebviewPanel | undefined;
-
 async function addCommentFromSelection() {
 	// 현재 열려있는 파일 가져오는 변수
 	const editor = vscode.window.activeTextEditor;
@@ -87,43 +85,18 @@ function getWebviewContent(webview: vscode.Webview, context: vscode.ExtensionCon
 	`;
 }
 
-function openWebview(context: vscode.ExtensionContext) {
-
-	panel = vscode.window.createWebviewPanel(
-		'necoView',
-		'NECO Code Helper',
-		vscode.ViewColumn.One,
-		{ enableScripts: true }
-	);
-
-	const editor = vscode.window.activeTextEditor;
-	if (!editor) return;
-
-	const selectedText = editor.document.getText(editor.selection);
-
-	panel.webview.html = getWebviewContent(panel.webview, context);
-
-	panel.webview.postMessage({
-		type: 'setCode',
-		text: selectedText
-	});
-}
-
-function handleSelectionChange() {
+function handleSelectionChange(provider: NecoViewProvider) {
 
 	vscode.window.onDidChangeTextEditorSelection(() => {
 
-		if (!panel) return;
 
 		const editor = vscode.window.activeTextEditor;
 		if (!editor) return;
 
 		const text = editor.document.getText(editor.selection);
 
-		panel.webview.postMessage({
-			type: 'setCode',
-			text: text
-		});
+		provider.sendMessage('setCode', text);
+
 	});
 }
 
@@ -145,7 +118,7 @@ export function activate(context: vscode.ExtensionContext) {
 		)
 	);
 
-	handleSelectionChange();
+	handleSelectionChange(provider);
 
 	context.subscriptions.push(commentCmd);
 
