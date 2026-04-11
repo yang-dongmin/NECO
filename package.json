@@ -6,12 +6,13 @@
   "engines": {
     "vscode": "^1.110.0"
   },
-  "categories": ["Other"],
+  "categories": [
+    "Other"
+  ],
   "activationEvents": [
     "onView:necoSidebarView"
   ],
   "main": "./out/extension.js",
-
   "contributes": {
     "commands": [
       {
@@ -19,17 +20,15 @@
         "title": "Neco"
       }
     ],
-
     "viewsContainers": {
       "activitybar": [
         {
           "id": "necoSidebar",
           "title": "NECO",
-          "icon": "media/icon.png"
+          "icon": "media/neco.svg"
         }
       ]
     },
-
     "views": {
       "necoSidebar": [
         {
@@ -40,24 +39,28 @@
       ]
     }
   },
-
   "scripts": {
-    "vscode:prepublish": "npm run compile",
+    "vscode:prepublish": "npm run build:all",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src",
-    "test": "vscode-test"
+    "test": "vscode-test",
+    "build:webview": "cd webview && npm run build",
+    "build:all": "npm run build:webview && npm run compile"
   },
-
   "devDependencies": {
-    "@types/vscode": "^1.110.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "22.x",
-    "typescript-eslint": "^8.56.1",
+    "@types/vscode": "^1.110.0",
+    "@vscode/test-cli": "^0.0.12",
+    "@vscode/test-electron": "^2.5.2",
     "eslint": "^9.39.3",
     "typescript": "^5.9.3",
-    "@vscode/test-cli": "^0.0.12",
-    "@vscode/test-electron": "^2.5.2"
+    "typescript-eslint": "^8.56.1"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "dotenv": "^17.4.1"
   }
 }
