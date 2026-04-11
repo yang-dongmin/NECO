@@ -5,17 +5,6 @@ Webview(React + Vite)를 활용하여 UI를 제공합니다.
 
 ---
 
-## 📦 프로젝트 구조
-
-```
-NECO-upgraded/
-├── src/                # VSCode Extension (TypeScript)
-├── webview/            # Webview UI (React + Vite)
-├── package.json        # Extension 설정
-```
-
----
-
 ## 📌 변경 사항
 
 ---
@@ -36,6 +25,14 @@ NECO-upgraded/
 
 ---
 
+## 📦 프로젝트 구조
+
+```
+NECO-upgraded/
+├── src/                # VSCode Extension (TypeScript)
+├── webview/            # Webview UI (React + Vite)
+├── package.json        # Extension 설정
+```
 ## ⚙️ 실행 방법 (개발 환경)
 
 ### 1️⃣ 저장소 클론
