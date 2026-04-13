@@ -55,6 +55,11 @@ export class NecoViewProvider implements vscode.WebviewViewProvider {
       return;
     }
 
+    if (message.type === 'showMessage') {
+      vscode.window.showInformationMessage(message.text);
+      return;
+    }
+
     if (message.type === 'generateCommentPreview') {
       const result = generateCommentPreview();
 

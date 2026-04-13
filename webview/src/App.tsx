@@ -13,22 +13,38 @@ interface CodePayload {
   fileName: string;
 }
 
+type SavedComment = {
+  comment: string;
+  code: string;
+};
+
 type State = {
   payload: CodePayload;
   copied: boolean;
   generatedComment: string;
+  savedComments: SavedComment[];
+  selectedIndex: number | null;
 };
+
+
 
 type Action =
   | { type: 'SET_CODE'; payload: CodePayload }
   | { type: 'SET_COPIED'; value: boolean }
-  | { type: 'SET_COMMENT_PREVIEW'; value: string };
+  | { type: 'SET_COMMENT_PREVIEW'; value: string }
+  | { type: 'SAVE_COMMENT'; value: SavedComment }
+  | { type: 'SET_SELECTED_INDEX'; value: number | null }
+  | { type: 'DELETE_COMMENT'; index: number }
 
 const initialState: State = {
   payload: { code: '', languageId: '', fileName: '' },
   copied: false,
   generatedComment: '',
+  savedComments: [],
+  selectedIndex: null,
 };
+
+
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
@@ -37,6 +53,8 @@ function reducer(state: State, action: Action): State {
         payload: action.payload,
         copied: false,
         generatedComment: '',
+        savedComments: state.savedComments,
+        selectedIndex: null,
       };
 
     case 'SET_COPIED':
@@ -44,6 +62,22 @@ function reducer(state: State, action: Action): State {
 
     case 'SET_COMMENT_PREVIEW':
       return { ...state, generatedComment: action.value };
+
+    case 'SAVE_COMMENT':
+      return {
+        ...state,
+        savedComments: [action.value, ...state.savedComments],
+      };
+
+    case 'SET_SELECTED_INDEX':
+      return { ...state, selectedIndex: action.value };
+
+    case 'DELETE_COMMENT':
+      return {
+        ...state,
+        savedComments: state.savedComments.filter((_, i) => i !== action.index),
+        selectedIndex: null,
+      };
 
     default:
       return state;
@@ -71,7 +105,7 @@ const LANG_LABELS: Record<string, string> = {
 };
 
 function App() {
-  const [{ payload, copied, generatedComment }, dispatch] = useReducer(reducer, initialState);
+  const [{ payload, copied, generatedComment, savedComments, selectedIndex }, dispatch] = useReducer(reducer, initialState);
 
   useEffect(() => {
     const handler = (event: MessageEvent) => {
@@ -107,6 +141,27 @@ function App() {
     if (!generatedComment) return;
     vscode.postMessage({ type: 'insertComment', text: generatedComment });
   }, [generatedComment]);
+
+  const handleSave = useCallback(() => {
+  if (!generatedComment) return;
+
+  const isDuplicate = savedComments.some(
+    (item) => item.code === payload.code
+  );
+
+  if (isDuplicate) {
+    vscode.postMessage({ 
+      type: 'showMessage', 
+      text: '이미 저장된 코드입니다!' 
+    });
+    return;
+  }
+
+  dispatch({ 
+    type: 'SAVE_COMMENT', 
+    value: { comment: generatedComment, code: payload.code } 
+  });
+}, [generatedComment, savedComments, payload.code]);
 
   const { lineCount, charCount, langLabel } = useMemo(() => ({
     lineCount: payload.code ? payload.code.split('\n').length : 0,
@@ -170,11 +225,20 @@ function App() {
               </div>
 
               {generatedComment ? (
-                <pre className="neco-preview-block"><code>{generatedComment}</code></pre>
+                <>
+                  <pre className="neco-preview-block"><code>{generatedComment}</code></pre>
+                  <button
+                    className="neco-save-btn"
+                    onClick={handleSave}
+                  >
+                    저장
+                  </button>
+                </>
               ) : (
                 <div className="neco-preview-empty">
                   AI 주석 생성 버튼을 누르면 여기에 결과가 표시돼요
                 </div>
+                
               )}
             </div>
           </>
@@ -185,7 +249,43 @@ function App() {
           </div>
         )}
       </div>
-
+        {savedComments.length > 0 && (
+  <div className="neco-saved-section">
+          <span className="neco-saved-title">
+             저장된 주석 <span className="neco-saved-count">{savedComments.length}</span>
+          </span>
+          <ul className="neco-saved-list">
+            {savedComments.map((item, i) => (
+              <li
+                key={i}
+                className="neco-saved-item"
+                onClick={() => dispatch({
+                  type: 'SET_SELECTED_INDEX',
+                  value: selectedIndex === i ? null : i
+                })}
+              >
+                <div className="neco-saved-item-header">
+                  <code className="neco-saved-comment">{item.comment}</code>
+                  <button
+                    className="neco-delete-btn"
+                    onClick={(e) => {
+                      e.stopPropagation(); // 토글 클릭 방지
+                      dispatch({ type: 'DELETE_COMMENT', index: i });
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+                {selectedIndex === i && (
+                  <pre className="neco-saved-code-block">
+                    <code>{item.code}</code>
+                  </pre>
+                )}
+              </li>
+            ))}
+    </ul>
+  </div>
+)}
       <footer className="neco-footer">
         NECO · 친절한 AI 코딩 친구
       </footer>

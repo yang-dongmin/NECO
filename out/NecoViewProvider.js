@@ -78,6 +78,10 @@ class NecoViewProvider {
             vscode.window.showInformationMessage('클립보드에 복사됐어요!');
             return;
         }
+        if (message.type === 'showMessage') {
+            vscode.window.showInformationMessage(message.text);
+            return;
+        }
         if (message.type === 'generateCommentPreview') {
             const result = (0, webviewCommentService_1.generateCommentPreview)();
             if (!result.success) {
