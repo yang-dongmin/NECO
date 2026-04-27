@@ -5,23 +5,11 @@ Webview(React + Vite)를 활용하여 UI를 제공합니다.
 
 ---
 
-## 📌 변경 사항
+## 📌 2026.04.19 - 변경 사항
 
 ---
 
-### 1️⃣ 각 파일 병합 완료. 정상 실행 확인.
-
----
-
-### 2️⃣ 기존 extension.ts에 몰려있던 코드 및 기능들을 여러 파일로 나누어 최적화.
-
----
-
-### 3️⃣ 코드 별로 주석을 추가하여 코드 사용 목적 설명 및 가독성 향상.
-
----
-
-### 4️⃣ 기존에 launch.json에서 받아오던 AI API Key를 .env에서 받아오도록 변경.
+### 1️⃣ 프로그램 내 코드들이 출력되는 부분들을 보완 및 수정.
 
 ---
 
@@ -38,7 +26,7 @@ NECO-upgraded/
 ### 1️⃣ 저장소 클론
 
 ```bash
-git clone https://github.com/your-repo/NECO.git
+git clone https://github.com/yang-dongmin/NECO
 cd NECO-upgraded
 ```
 

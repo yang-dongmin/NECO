@@ -165,10 +165,13 @@ body {
 
 .neco-code-block code {
   font-family: var(--mono);
-  font-size: 12px;
-  line-height: 1.7;
+  font-size: 11px;
   color: #c9d1d9;
   white-space: pre;
+  overflow-x: auto;
+  overflow-y: hidden;
+  text-overflow: clip;
+  width: 100%;
   display: block;
 }
 
@@ -363,10 +366,12 @@ body {
   font-family: var(--mono);
   font-size: 11px;
   color: var(--accent2);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: pre;
+  overflow-x: auto;
+  overflow-y: hidden;
+  text-overflow: clip;
   width: 100%;
+  display: block;
 }
 
 .neco-saved-code-block {
@@ -421,6 +426,7 @@ body {
   justify-content: space-between;
   width: 100%;
   gap: 8px;
+  min-width: 0;
 }
 
 .neco-delete-btn {
