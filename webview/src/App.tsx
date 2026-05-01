@@ -13,9 +13,24 @@ interface CodePayload {
   fileName: string;
 }
 
+interface ParsedParam {
+  name: string;
+  type?: string;
+}
+
+interface ParsedCode {
+  functionName?: string;
+  params: ParsedParam[];
+  returnType?: string;
+  calledFunctions: string[];
+  languageId: string;
+  raw: string;
+}
+
 type SavedComment = {
   comment: string;
   code: string;
+  parsedCode: ParsedCode | null;
 };
 
 type State = {
@@ -24,6 +39,8 @@ type State = {
   generatedComment: string;
   savedComments: SavedComment[];
   selectedIndex: number | null;
+  parsedCode: ParsedCode | null;
+  analysisOpen: boolean;
 };
 
 
@@ -35,6 +52,8 @@ type Action =
   | { type: 'SAVE_COMMENT'; value: SavedComment }
   | { type: 'SET_SELECTED_INDEX'; value: number | null }
   | { type: 'DELETE_COMMENT'; index: number }
+  | { type: 'SET_PARSED_CODE'; value: ParsedCode | null }
+  | { type: 'TOGGLE_ANALYSIS' };
 
 const initialState: State = {
   payload: { code: '', languageId: '', fileName: '' },
@@ -42,6 +61,8 @@ const initialState: State = {
   generatedComment: '',
   savedComments: [],
   selectedIndex: null,
+  parsedCode: null,
+  analysisOpen: false,
 };
 
 
@@ -55,6 +76,8 @@ function reducer(state: State, action: Action): State {
         generatedComment: '',
         savedComments: state.savedComments,
         selectedIndex: null,
+        parsedCode: null,
+        analysisOpen: false,
       };
 
     case 'SET_COPIED':
@@ -78,6 +101,13 @@ function reducer(state: State, action: Action): State {
         savedComments: state.savedComments.filter((_, i) => i !== action.index),
         selectedIndex: null,
       };
+    case 'SET_PARSED_CODE':
+      return { ...state, parsedCode: action.value };
+
+    case 'TOGGLE_ANALYSIS':
+      return { ...state, analysisOpen: !state.analysisOpen };
+
+      
 
     default:
       return state;
@@ -105,7 +135,7 @@ const LANG_LABELS: Record<string, string> = {
 };
 
 function App() {
-  const [{ payload, copied, generatedComment, savedComments, selectedIndex }, dispatch] = useReducer(reducer, initialState);
+  const [{ payload, copied, generatedComment, savedComments, selectedIndex, parsedCode, analysisOpen }, dispatch] = useReducer(reducer, initialState);
 
   useEffect(() => {
     const handler = (event: MessageEvent) => {
@@ -117,6 +147,9 @@ function App() {
 
       if (message.type === 'setCommentPreview') {
         dispatch({ type: 'SET_COMMENT_PREVIEW', value: message.text ?? '' });
+      }
+      if (message.type === 'setParsedCode') {
+        dispatch({ type: 'SET_PARSED_CODE', value: JSON.parse(message.text) });
       }
     };
 
@@ -157,10 +190,10 @@ function App() {
     return;
   }
 
-  dispatch({ 
-    type: 'SAVE_COMMENT', 
-    value: { comment: generatedComment, code: payload.code } 
-  });
+    dispatch({
+      type: 'SAVE_COMMENT',
+      value: { comment: generatedComment, code: payload.code, parsedCode }
+    });
 }, [generatedComment, savedComments, payload.code]);
 
   const { lineCount, charCount, langLabel } = useMemo(() => ({
@@ -201,6 +234,59 @@ function App() {
             </div>
 
             <pre className="neco-code-block"><code>{payload.code}</code></pre>
+
+            {parsedCode && (
+              <div className="neco-parsed-section">
+                <button
+                  className="neco-parsed-toggle"
+                  onClick={() => dispatch({ type: 'TOGGLE_ANALYSIS' })}
+                >
+                  <span className="neco-section-title">코드 분석</span>
+                  <span className="neco-toggle-icon">{analysisOpen ? '▲' : '▼'}</span>
+                </button>
+
+                {analysisOpen && (
+                  <div className="neco-parsed-body">
+                    {parsedCode.functionName && (
+                      <div className="neco-parsed-row">
+                        <span className="neco-parsed-label">함수명</span>
+                        <span className="neco-parsed-value">{parsedCode.functionName}</span>
+                      </div>
+                    )}
+                    {parsedCode.params.length > 0 && (
+                      <div className="neco-parsed-row">
+                        <span className="neco-parsed-label">매개변수</span>
+                        <div className="neco-parsed-params">
+                          {parsedCode.params.map((p, i) => (
+                            <span key={i} className="neco-param-badge">
+                              {p.name}{p.type ? `: ${p.type}` : ''}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {parsedCode.returnType && (
+                      <div className="neco-parsed-row">
+                        <span className="neco-parsed-label">반환 타입</span>
+                        <span className="neco-parsed-value">{parsedCode.returnType}</span>
+                      </div>
+                    )}
+                    {parsedCode.calledFunctions.length > 0 && (
+                      <div className="neco-parsed-row">
+                        <span className="neco-parsed-label">호출 함수</span>
+                        <div className="neco-parsed-params">
+                          {parsedCode.calledFunctions.map((f, i) => (
+                            <span key={i} className="neco-param-badge neco-call-badge">
+                              {f}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="neco-action-section">
               <button
@@ -249,10 +335,10 @@ function App() {
           </div>
         )}
       </div>
-        {savedComments.length > 0 && (
-  <div className="neco-saved-section">
+      {savedComments.length > 0 && (
+        <div className="neco-saved-section">
           <span className="neco-saved-title">
-             저장된 주석 <span className="neco-saved-count">{savedComments.length}</span>
+            저장된 주석 <span className="neco-saved-count">{savedComments.length}</span>
           </span>
           <ul className="neco-saved-list">
             {savedComments.map((item, i) => (
@@ -281,11 +367,48 @@ function App() {
                     <code>{item.code}</code>
                   </pre>
                 )}
+                {selectedIndex === i && item.parsedCode && (
+                  <div className="neco-parsed-section" style={{ marginTop: '8px' }}>
+                    <span className="neco-section-title">코드 분석</span>
+                    <div className="neco-parsed-body">
+                      {item.parsedCode.functionName && (
+                        <div className="neco-parsed-row">
+                          <span className="neco-parsed-label">함수명</span>
+                          <span className="neco-parsed-value">{item.parsedCode.functionName}</span>
+                        </div>
+                      )}
+                      {item.parsedCode.params.length > 0 && (
+                        <div className="neco-parsed-row">
+                          <span className="neco-parsed-label">매개변수</span>
+                          <div className="neco-parsed-params">
+                            {item.parsedCode.params.map((p, j) => (
+                              <span key={j} className="neco-param-badge">
+                                {p.name}{p.type ? `: ${p.type}` : ''}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {item.parsedCode.calledFunctions.length > 0 && (
+                        <div className="neco-parsed-row">
+                          <span className="neco-parsed-label">호출 함수</span>
+                          <div className="neco-parsed-params">
+                            {item.parsedCode.calledFunctions.map((f, j) => (
+                              <span key={j} className="neco-param-badge neco-call-badge">
+                                {f}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </li>
             ))}
-    </ul>
-  </div>
-)}
+          </ul>
+        </div>
+      )}
       <footer className="neco-footer">
         NECO · 친절한 AI 코딩 친구
       </footer>

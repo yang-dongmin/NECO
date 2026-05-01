@@ -38,6 +38,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.handleSelectionChange = handleSelectionChange;
 const vscode = __importStar(require("vscode"));
 const editorUtils_1 = require("../utils/editorUtils");
+const codeAnalyzer_1 = require("./parser/codeAnalyzer");
 /*
   1 사용자가 에디터에서 다른 영역을 선택한다.
   2 onDidChangeTextEditorSelection 이벤트가 발생한다.
@@ -47,14 +48,14 @@ const editorUtils_1 = require("../utils/editorUtils");
   - 웹뷰 App.tsx는 'setCode' 메시지를 받아 화면을 갱신한다.
   - debounce를 사용해서 선택이 빠르게 바뀔 때 과도한 전송을 줄인다.
 */
-function handleSelectionChange(provider) {
+function handleSelectionChange(provider, extensionUri) {
     // 연속 선택 이벤트가 너무 자주 발생하는 것을 막기 위한 타이머
     let debounceTimer;
     return vscode.window.onDidChangeTextEditorSelection(() => {
         // 이전 대기 중이던 타이머가 있으면 취소
         clearTimeout(debounceTimer);
         // 0.2초 뒤에 마지막 선택 상태만 반영
-        debounceTimer = setTimeout(() => {
+        debounceTimer = setTimeout(async () => {
             // 현재 활성 에디터를 가져온다.
             const editor = (0, editorUtils_1.getActiveEditor)();
             if (!editor)
@@ -67,6 +68,16 @@ function handleSelectionChange(provider) {
             const languageId = document.languageId;
             // 현재 파일명만 추출
             const fileName = (0, editorUtils_1.getCurrentFileName)(editor);
+            // 1. 기존 코드 전송
+            provider.sendMessage('setCode', JSON.stringify({ code: text, languageId, fileName }));
+            // 선택 없으면 파싱 초기화
+            if (!text.trim()) {
+                provider.sendMessage('setParsedCode', JSON.stringify(null));
+                return;
+            }
+            // 2. 파싱 결과 전송
+            const result = await (0, codeAnalyzer_1.analyzeCode)(text, languageId, extensionUri);
+            console.log('[NECO] analyzeCode result:', JSON.stringify(result));
             /*
               웹뷰로 보내는 데이터:
               - code: 선택한 코드
@@ -78,7 +89,13 @@ function handleSelectionChange(provider) {
                 -> NecoViewProvider.sendMessage()
                 -> webview App.tsx의 window message handler
             */
-            provider.sendMessage('setCode', JSON.stringify({ code: text, languageId, fileName }));
+            if (result.success) {
+                provider.sendMessage('setParsedCode', JSON.stringify(result.parsed));
+            }
+            else {
+                console.log('[NECO] 파싱 실패:', result.reason);
+                provider.sendMessage('setParsedCode', JSON.stringify(null));
+            }
         }, 200);
     });
 }
