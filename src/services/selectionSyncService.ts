@@ -4,6 +4,7 @@
 import * as vscode from 'vscode';
 import { NecoViewProvider } from '../NecoViewProvider';
 import { getActiveEditor, getCurrentFileName } from '../utils/editorUtils';
+import { analyzeCode } from './parser/codeAnalyzer';
 
 /*
   1 사용자가 에디터에서 다른 영역을 선택한다.
@@ -14,7 +15,7 @@ import { getActiveEditor, getCurrentFileName } from '../utils/editorUtils';
   - 웹뷰 App.tsx는 'setCode' 메시지를 받아 화면을 갱신한다.
   - debounce를 사용해서 선택이 빠르게 바뀔 때 과도한 전송을 줄인다.
 */
-export function handleSelectionChange(provider: NecoViewProvider): vscode.Disposable {
+export function handleSelectionChange(provider: NecoViewProvider, extensionUri: vscode.Uri): vscode.Disposable {
 	// 연속 선택 이벤트가 너무 자주 발생하는 것을 막기 위한 타이머
 	let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -23,7 +24,7 @@ export function handleSelectionChange(provider: NecoViewProvider): vscode.Dispos
 		clearTimeout(debounceTimer);
 
 		// 0.2초 뒤에 마지막 선택 상태만 반영
-		debounceTimer = setTimeout(() => {
+		debounceTimer = setTimeout(async () => {
 			// 현재 활성 에디터를 가져온다.
 			const editor = getActiveEditor();
 			if (!editor) return;
@@ -40,6 +41,22 @@ export function handleSelectionChange(provider: NecoViewProvider): vscode.Dispos
 			// 현재 파일명만 추출
 			const fileName = getCurrentFileName(editor);
 
+			// 1. 기존 코드 전송
+			provider.sendMessage(
+				'setCode',
+				JSON.stringify({ code: text, languageId, fileName })
+			);
+
+			// 선택 없으면 파싱 초기화
+			if (!text.trim()) {
+				provider.sendMessage('setParsedCode', JSON.stringify(null));
+				return;
+			}
+
+			// 2. 파싱 결과 전송
+			const result = await analyzeCode(text, languageId, extensionUri);
+			console.log('[NECO] analyzeCode result:', JSON.stringify(result));
+
 			/*
 			  웹뷰로 보내는 데이터:
 			  - code: 선택한 코드
@@ -51,10 +68,12 @@ export function handleSelectionChange(provider: NecoViewProvider): vscode.Dispos
 			    -> NecoViewProvider.sendMessage()
 			    -> webview App.tsx의 window message handler
 			*/
-			provider.sendMessage(
-				'setCode',
-				JSON.stringify({ code: text, languageId, fileName })
-			);
+			if (result.success) {
+				provider.sendMessage('setParsedCode', JSON.stringify(result.parsed));
+			} else {
+				console.log('[NECO] 파싱 실패:', result.reason);
+				provider.sendMessage('setParsedCode', JSON.stringify(null));
+			}
 		}, 200);
 	});
 }
