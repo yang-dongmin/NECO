@@ -1,0 +1,153 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary:      #2563eb;
+  --primary-light:#eff6ff;
+  --success:      #10b981;
+  --success-light:#ecfdf5;
+  --warning:      #f59e0b;
+  --warning-light:#fffbeb;
+  --danger:       #ef4444;
+  --danger-light: #fef2f2;
+  --text-primary: #1e293b;
+  --text-secondary:#475569;
+  --text-muted:   #94a3b8;
+  --border:       #f1f5f9;
+  --border-md:    #e2e8f0;
+  --bg:           #ffffff;
+  --bg-subtle:    #f8fafc;
+  --bg-hover:     #f1f5f9;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+
+.mono { font-family: 'JetBrains Mono', monospace; }
+
+/* 코드 블록 */
+.code-area {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.8;
+  padding: 14px 16px;
+  color: #1e293b;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* 배지 */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 10px;
+  border-radius: 99px;
+  white-space: nowrap;
+}
+
+/* 카드 hover 트랜지션 */
+.card-hover {
+  transition: box-shadow 0.18s, border-color 0.18s, transform 0.18s;
+}
+.card-hover:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  transform: translateY(-1px);
+}
+
+/* ── 모바일 반응형 ─────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* 사이드바 숨김 */
+  aside {
+    display: none !important;
+  }
+
+  /* 메인 콘텐츠 전체 너비 */
+  #root > div > div:last-child {
+    width: 100% !important;
+  }
+
+  /* 헤더 컴팩트 */
+  header {
+    padding: 0 14px !important;
+    height: 52px !important;
+  }
+
+  /* 메인 패딩 축소 */
+  main {
+    padding: 14px !important;
+  }
+
+  /* 4열 → 2열 */
+  div[style*="repeat(4, 1fr)"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* 2열 → 1열 */
+  div[style*="1fr 1fr"],
+  div[style*="grid-template-columns: '1fr 1fr'"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* 자동 채움 카드 최소 너비 축소 */
+  div[style*="minmax(340px"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* 플립 카드 폰트 축소 */
+  .flip-scene pre {
+    font-size: 12px !important;
+    padding: 14px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* 4열 → 1열 */
+  div[style*="repeat(4, 1fr)"] {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+
+/* ── 스켈레톤 애니메이션 ─────────────────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 6px;
+}
+
+/* 모바일 하단 네비 표시 */
+@media (max-width: 768px) {
+  .mobile-nav {
+    display: flex !important;
+  }
+  main {
+    padding-bottom: 80px !important;
+  }
+}
