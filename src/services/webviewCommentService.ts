@@ -5,6 +5,7 @@ import * as vscode from 'vscode';
 import { generateComment, formatCommentText } from './commentGenerator';
 import { generateAiComment } from './aiCommentService';
 import { getActiveEditor, getSelectedText } from '../utils/editorUtils';
+import { ParsedCode } from './parser/types';
 
 /*
   기본 주석 미리보기 생성
@@ -53,7 +54,7 @@ export function generateCommentPreview(): { success: boolean; comment?: string; 
     -> NecoViewProvider.ts
     -> 이 함수 호출
 */
-export async function generateAiCommentPreview(): Promise<{ success: boolean; comment?: string; message?: string }> {
+export async function generateAiCommentPreview(parsedCode?: ParsedCode | null): Promise<{ success: boolean; comment?: string; message?: string }> {
   // 현재 활성 에디터를 가져온다.
   const editor = getActiveEditor();
 

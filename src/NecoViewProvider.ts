@@ -74,7 +74,9 @@ export class NecoViewProvider implements vscode.WebviewViewProvider {
     }
 
     if (message.type === 'generateAiCommentPreview') {
-      const result = await generateAiCommentPreview();
+      const parsedCode = message.parsedCode ?? null;
+      const result = await generateAiCommentPreview(parsedCode); 
+      console.log('[NECO] 받은 parsedCode:', JSON.stringify(parsedCode));
 
       if (!result.success) {
         vscode.window.showErrorMessage(result.message ?? 'AI 주석 생성에 실패했어요.');

@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { ParsedCode } from './parser/types';
 
 /*
   - Gemini API를 사용해서 선택한 코드에 대한 AI 주석 문장을 만든다.
@@ -9,7 +10,8 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 export async function generateAiComment(
   code: string,
-  languageId: string
+  languageId: string,
+  parsedCode?: ParsedCode | null
 ): Promise<{ success: boolean; comment?: string; message?: string }> {
   // 현재 실행 환경에 Gemini API 키가 들어왔는지 확인하는 디버그 로그
   console.log('[NECO] GEMINI_API_KEY exists:', !!process.env.GEMINI_API_KEY);
@@ -40,6 +42,14 @@ export async function generateAiComment(
     // 사용할 모델을 지정한다.
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
+    const contextPart = parsedCode?.functionName ? `
+    코드 분석 정보:
+    - 함수명: ${parsedCode.functionName}
+    - 매개변수: ${parsedCode.params.map(p => p.type ? `${p.name}: ${p.type}` : p.name).join(', ') || '없음'}
+    - 반환타입: ${parsedCode.returnType ?? '없음'}
+    - 호출 함수: ${parsedCode.calledFunctions.slice(0, 5).join(', ') || '없음'}
+    ` : '';
+
     /*
       프롬프트 역할:
       - 선택한 코드가 어떤 언어인지 전달
@@ -52,6 +62,7 @@ export async function generateAiComment(
       `선택 코드:\n${code}\n\n` +
       `해야 할 일:\n` +
       `- 이 코드 바로 위에 들어갈 한국어 주석 한 줄만 만들어라.\n` +
+      `- 함수명, 매개변수, 반환타입 정보가 있으면 적극 활용해라.\n` +
       `- 짧고 자연스럽게 설명해라.\n` +
       `- 코드 블록, 따옴표, 번호, 불릿 없이 결과 문장만 반환해라.\n` +
       `- 주석 기호(//, #, /* */)는 붙이지 마라. 설명 문장만 반환해라.`;
