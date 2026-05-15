@@ -167,8 +167,8 @@ function App() {
 
   const handleGenerateAiComment = useCallback(() => {
     if (!payload.code) return;
-    vscode.postMessage({ type: 'generateAiCommentPreview' });
-  }, [payload.code]);
+    vscode.postMessage({ type: 'generateAiCommentPreview', parsedCode: parsedCode });
+  }, [payload.code, parsedCode]);
 
   const handleInsertComment = useCallback(() => {
     if (!generatedComment) return;

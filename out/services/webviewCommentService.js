@@ -82,7 +82,7 @@ function generateCommentPreview() {
     -> NecoViewProvider.ts
     -> 이 함수 호출
 */
-async function generateAiCommentPreview() {
+async function generateAiCommentPreview(parsedCode) {
     // 현재 활성 에디터를 가져온다.
     const editor = (0, editorUtils_1.getActiveEditor)();
     // 열린 파일이 없으면 중단

@@ -93,7 +93,9 @@ class NecoViewProvider {
             return;
         }
         if (message.type === 'generateAiCommentPreview') {
-            const result = await (0, webviewCommentService_1.generateAiCommentPreview)();
+            const parsedCode = message.parsedCode ?? null;
+            const result = await (0, webviewCommentService_1.generateAiCommentPreview)(parsedCode);
+            console.log('[NECO] 받은 parsedCode:', JSON.stringify(parsedCode));
             if (!result.success) {
                 vscode.window.showErrorMessage(result.message ?? 'AI 주석 생성에 실패했어요.');
                 this.sendMessage('setCommentPreview', '');
