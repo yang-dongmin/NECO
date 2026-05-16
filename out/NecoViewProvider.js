@@ -37,6 +37,9 @@ exports.NecoViewProvider = void 0;
 const vscode = __importStar(require("vscode"));
 const fs = __importStar(require("fs"));
 const webviewCommentService_1 = require("./services/webviewCommentService");
+const noteStorageService_1 = require("./services/noteStorageService");
+const localServerService_1 = require("./services/localServerService");
+const quizGeneratorService_1 = require("./services/quizGeneratorService");
 /*
   - VS Code 사이드바 웹뷰를 생성하고 관리한다
   - 웹뷰(App.tsx)에서 보낸 메시지를 받아 실제 기능을 실행한다
@@ -64,6 +67,13 @@ class NecoViewProvider {
             ]
         };
         webview.html = this.getHtml(webview);
+        webview.onDidReceiveMessage(async (message) => {
+            switch (message.type) {
+                case 'LOGIN':
+                    vscode.env.openExternal(vscode.Uri.parse('http://localhost:5173/login'));
+                    break;
+            }
+        });
         const messageListener = webview.onDidReceiveMessage(async (message) => {
             await this.handleMessage(message);
         });
@@ -111,6 +121,35 @@ class NecoViewProvider {
                 return;
             }
             vscode.window.showInformationMessage(result.message);
+        }
+        if (message.type === 'saveNote') {
+            const { code, comment, parsedCode, isPublic, languageId, fileName } = message.payload;
+            const id = crypto.randomUUID();
+            const note = {
+                id,
+                code,
+                comment,
+                parsedCode: parsedCode ?? null,
+                isPublic,
+                languageId,
+                fileName,
+                createdAt: new Date().toISOString(),
+            };
+            if (isPublic) {
+                vscode.window.showInformationMessage('빈칸 문제를 생성하고 있어요 🤖');
+                const quizResult = await (0, quizGeneratorService_1.generateQuiz)(code, comment, languageId);
+                if (quizResult.success) {
+                    note.quiz = {
+                        blankedCode: quizResult.blankedCode,
+                        answer: quizResult.answer,
+                        hint: quizResult.hint,
+                    };
+                }
+            }
+            (0, noteStorageService_1.saveNote)(note);
+            (0, localServerService_1.broadcastNewNote)(note);
+            vscode.window.showInformationMessage(isPublic ? '저장됐어요! 빈칸 문제도 생성됐어요 ✅' : '비공개로 저장됐어요 ✅');
+            return;
         }
     }
     getHtml(webview) {

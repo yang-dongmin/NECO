@@ -5,6 +5,9 @@ import {
   generateAiCommentPreview,
   insertGeneratedComment
 } from './services/webviewCommentService';
+import { saveNote, NecoNote } from './services/noteStorageService';
+import { broadcastNewNote } from './services/localServerService';
+import { generateQuiz } from './services/quizGeneratorService';
 
 /*
   - VS Code 사이드바 웹뷰를 생성하고 관리한다
@@ -36,6 +39,24 @@ export class NecoViewProvider implements vscode.WebviewViewProvider {
     };
 
     webview.html = this.getHtml(webview);
+
+    webview.onDidReceiveMessage(
+      async (message) => {
+
+        switch (message.type) {
+
+          case 'LOGIN':
+
+            vscode.env.openExternal(
+              vscode.Uri.parse(
+                'http://localhost:5173/login'
+              )
+            );
+
+            break;
+        }
+      }
+    );
 
     const messageListener = webview.onDidReceiveMessage(async (message) => {
       await this.handleMessage(message);
@@ -97,6 +118,42 @@ export class NecoViewProvider implements vscode.WebviewViewProvider {
       }
 
       vscode.window.showInformationMessage(result.message);
+    }
+    if (message.type === 'saveNote') {
+      const { code, comment, parsedCode, isPublic, languageId, fileName } = message.payload;
+
+      const id = crypto.randomUUID();
+
+      const note: NecoNote = {
+        id,
+        code,
+        comment,
+        parsedCode: parsedCode ?? null,
+        isPublic,
+        languageId,
+        fileName,
+        createdAt: new Date().toISOString(),
+      };
+
+      if (isPublic) {
+        vscode.window.showInformationMessage('빈칸 문제를 생성하고 있어요 🤖');
+        const quizResult = await generateQuiz(code, comment, languageId);
+        if (quizResult.success) {
+          note.quiz = {
+            blankedCode: quizResult.blankedCode!,
+            answer: quizResult.answer!,
+            hint: quizResult.hint!,
+          };
+        }
+      }
+
+      saveNote(note);
+      broadcastNewNote(note);
+
+      vscode.window.showInformationMessage(
+        isPublic ? '저장됐어요! 빈칸 문제도 생성됐어요 ✅' : '비공개로 저장됐어요 ✅'
+      );
+      return;
     }
   }
 

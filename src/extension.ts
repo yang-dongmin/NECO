@@ -5,6 +5,7 @@ import { NecoViewProvider } from './NecoViewProvider';
 import { addCommentFromSelection } from './commands/addCommentCommand';
 import { handleSelectionChange } from './services/selectionSyncService';
 import { initParser } from './services/parser/treeParser';
+import { startLocalServer, stopLocalServer } from './services/localServerService';
 
 export async function activate(context: vscode.ExtensionContext) {
 	const envPath = path.join(context.extensionPath, '.env');
@@ -13,6 +14,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	console.log('[NECO] envPath:', envPath);
 	console.log('[NECO] env GEMINI:', !!process.env.GEMINI_API_KEY);
 
+	startLocalServer();
 	await initParser(context.extensionUri);
 
 	const provider = new NecoViewProvider(context.extensionUri);
@@ -24,4 +26,6 @@ export async function activate(context: vscode.ExtensionContext) {
 	);
 }
 
-export function deactivate() {}
+export function deactivate() {
+  stopLocalServer();
+}

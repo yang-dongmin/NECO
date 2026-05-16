@@ -42,14 +42,18 @@ const NecoViewProvider_1 = require("./NecoViewProvider");
 const addCommentCommand_1 = require("./commands/addCommentCommand");
 const selectionSyncService_1 = require("./services/selectionSyncService");
 const treeParser_1 = require("./services/parser/treeParser");
+const localServerService_1 = require("./services/localServerService");
 async function activate(context) {
     const envPath = path.join(context.extensionPath, '.env');
     dotenv.config({ path: envPath });
     console.log('[NECO] envPath:', envPath);
     console.log('[NECO] env GEMINI:', !!process.env.GEMINI_API_KEY);
+    (0, localServerService_1.startLocalServer)();
     await (0, treeParser_1.initParser)(context.extensionUri);
     const provider = new NecoViewProvider_1.NecoViewProvider(context.extensionUri);
     context.subscriptions.push(vscode.commands.registerCommand('neco.addComment', addCommentCommand_1.addCommentFromSelection), vscode.window.registerWebviewViewProvider('necoSidebarView', provider), (0, selectionSyncService_1.handleSelectionChange)(provider, context.extensionUri));
 }
-function deactivate() { }
+function deactivate() {
+    (0, localServerService_1.stopLocalServer)();
+}
 //# sourceMappingURL=extension.js.map

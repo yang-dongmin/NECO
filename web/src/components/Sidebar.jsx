@@ -22,6 +22,11 @@ export default function Sidebar() {
   const handleSubject = (id) => { setFilter('subject', id); navigate('/notes') }
   const handleBookmark = () => { setFilter('bookmark', 'true'); navigate('/notes') }
 
+  const handleLogout = () => {
+    logout()
+    navigate('/login')
+  }
+
   return (
     <aside style={{ width:232, minWidth:232, background:'#fff', borderRight:'1px solid #f1f5f9', display:'flex', flexDirection:'column', height:'100vh' }}>
       {/* 로고 */}
@@ -101,7 +106,7 @@ export default function Sidebar() {
         >
           <Plus size={15} /> 문제 추가
         </button>
-        <div onClick={logout} title="클릭하여 로그아웃" style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 10px', borderRadius:8, cursor:'pointer', transition:'background 0.12s' }}
+        <div onClick={handleLogout} title="클릭하여 로그아웃" style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 10px', borderRadius:8, cursor:'pointer', transition:'background 0.12s' }}
           onMouseEnter={e=>e.currentTarget.style.background='#f8fafc'}
           onMouseLeave={e=>e.currentTarget.style.background='transparent'}
         >

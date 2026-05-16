@@ -18,7 +18,7 @@ export default function NoteCard({ note }) {
   const card      = getCard(note.id)
   const mastery   = card.repetitions > 0 ? masteryLevel(card.ef) : null
   const barColor  = mastery ? MASTERY_COLORS[mastery.label] : MASTERY_COLORS.default
-  const preview   = note.wrongCode.split('\n').slice(0, 3).join('\n')
+  const preview = (note.wrongCode || note.code || '').split('\n').slice(0, 3).join('\n')
 
   return (
     <div
@@ -43,8 +43,8 @@ export default function NoteCard({ note }) {
       <div style={{ flex: 1, padding: '16px 18px' }}>
         {/* 헤더 */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
-          <SubjectBadge subjectId={note.subject} size="sm" />
-          <RoundBadge year={note.year} round={note.round} />
+          {note.subject && <SubjectBadge subjectId={note.subject} size="sm" />}
+          {note.year && <RoundBadge year={note.year} round={note.round} />}
           {/* 숙련도 텍스트 배지 */}
           {mastery && (
             <span style={{
@@ -62,7 +62,7 @@ export default function NoteCard({ note }) {
 
         {/* 태그 */}
         <div style={{ display: 'flex', gap: 4, marginBottom: 10, flexWrap: 'wrap' }}>
-          {note.tags.slice(0, 3).map(t => <TagBadge key={t.id} name={t.name} />)}
+          {(note.tags || []).slice(0, 3).map(t => <TagBadge key={t.id} name={t.name} />)}
         </div>
 
         {/* 문제 미리보기 */}
@@ -70,7 +70,7 @@ export default function NoteCard({ note }) {
           background: '#f8fafc', border: '1px solid #f1f5f9', borderRadius: 8,
           padding: '10px 12px', marginBottom: 12,
           fontSize: 12.5, color: '#334155', lineHeight: 1.7,
-          fontFamily: note.language !== 'theory' ? 'JetBrains Mono, monospace' : 'inherit',
+          fontFamily: (note.languageId || note.language) !== 'theory' ? 'JetBrains Mono, monospace' : 'inherit',
           overflow: 'hidden', maxHeight: 68,
           display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical',
         }}>

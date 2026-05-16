@@ -4,17 +4,109 @@ import { useAuthStore } from '../store'
 import logo from '../assets/neco.png';
 
 export default function LoginPage() {
-  const [email,    setEmail]    = useState('')
-  const [password, setPassword] = useState('')
-  const [error,    setError]    = useState('')
-  const { login } = useAuthStore()
-  const navigate  = useNavigate()
+  const [isRegisterMode, setIsRegisterMode] = useState(false)
 
-  const handleSubmit = (e) => {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [nickname, setNickname] = useState('')
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+
+  const { login } = useAuthStore()
+  const navigate = useNavigate()
+
+  const resetMessage = () => {
+    setError('')
+    setSuccess('')
+  }
+
+  const handleLogin = async (e) => {
     e.preventDefault()
-    if (!email || !password) { setError('이메일과 비밀번호를 입력해주세요.'); return }
-    login({ name: email.split('@')[0], email }, 'mock-jwt-token')
-    navigate('/')
+    resetMessage()
+
+    if (!email || !password) {
+      setError('이메일과 비밀번호를 입력해주세요.')
+      return
+    }
+
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.message || '로그인에 실패했습니다.')
+        return
+      }
+
+      login(
+        {
+          id: data.user.id,
+          name: data.user.nickname,
+          email: data.user.email,
+        },
+        data.token
+      )
+
+      navigate('/')
+    } catch (error) {
+      console.error(error)
+      setError('서버에 연결할 수 없습니다.')
+    }
+  }
+
+  const handleRegister = async (e) => {
+    e.preventDefault()
+    resetMessage()
+
+    if (!nickname || !email || !password) {
+      setError('닉네임, 이메일, 비밀번호를 모두 입력해주세요.')
+      return
+    }
+
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          nickname,
+          email,
+          password,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.message || '회원가입에 실패했습니다.')
+        return
+      }
+
+      setSuccess('회원가입이 완료되었습니다. 로그인해주세요.')
+      setIsRegisterMode(false)
+      setPassword('')
+      setNickname('')
+    } catch (error) {
+      console.error(error)
+      setError('서버에 연결할 수 없습니다.')
+    }
+  }
+
+  const changeMode = (mode) => {
+    resetMessage()
+    setIsRegisterMode(mode)
+    setPassword('')
   }
 
   return (
@@ -30,7 +122,48 @@ export default function LoginPage() {
 
         {/* 카드 */}
         <div style={{ background: '#fff', border: '1px solid #f1f5f9', borderRadius: 16, padding: '32px', boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: '#1e293b', marginBottom: 22 }}>로그인</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: '#1e293b', marginBottom: 18 }}>
+            {isRegisterMode ? '회원가입' : '로그인'}
+          </div>
+
+          {/* 로그인 / 회원가입 탭 */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', background: '#f1f5f9', borderRadius: 10, padding: 4, marginBottom: 20 }}>
+            <button
+              type="button"
+              onClick={() => changeMode(false)}
+              style={{
+                border: 'none',
+                borderRadius: 8,
+                padding: '9px 0',
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: 'pointer',
+                background: !isRegisterMode ? '#fff' : 'transparent',
+                color: !isRegisterMode ? '#2563eb' : '#64748b',
+                boxShadow: !isRegisterMode ? '0 1px 4px rgba(0,0,0,0.08)' : 'none',
+              }}
+            >
+              로그인
+            </button>
+
+            <button
+              type="button"
+              onClick={() => changeMode(true)}
+              style={{
+                border: 'none',
+                borderRadius: 8,
+                padding: '9px 0',
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: 'pointer',
+                background: isRegisterMode ? '#fff' : 'transparent',
+                color: isRegisterMode ? '#2563eb' : '#64748b',
+                boxShadow: isRegisterMode ? '0 1px 4px rgba(0,0,0,0.08)' : 'none',
+              }}
+            >
+              회원가입
+            </button>
+          </div>
 
           {error && (
             <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 12, color: '#dc2626' }}>
@@ -38,9 +171,42 @@ export default function LoginPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <Field label="이메일" type="email"    value={email}    onChange={setEmail}    placeholder="you@example.com" />
-            <Field label="비밀번호" type="password" value={password} onChange={setPassword} placeholder="••••••••" />
+          {success && (
+            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 12, color: '#16a34a' }}>
+              {success}
+            </div>
+          )}
+
+          <form onSubmit={isRegisterMode ? handleRegister : handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {isRegisterMode && (
+              <Field
+                label="닉네임"
+                type="text"
+                value={nickname}
+                onChange={setNickname}
+                placeholder="닉네임을 입력하세요"
+                autoComplete="nickname"
+              />
+            )}
+
+            <Field
+              label="이메일"
+              type="email"
+              value={email}
+              onChange={setEmail}
+              placeholder="you@example.com"
+              autoComplete="email"
+            />
+
+            <Field
+              label="비밀번호"
+              type="password"
+              value={password}
+              onChange={setPassword}
+              placeholder="••••••••"
+              autoComplete={isRegisterMode ? 'new-password' : 'current-password'}
+            />
+
             <button
               type="submit"
               style={{
@@ -51,35 +217,34 @@ export default function LoginPage() {
               onMouseEnter={e => e.currentTarget.style.background = '#1d4ed8'}
               onMouseLeave={e => e.currentTarget.style.background = '#2563eb'}
             >
-              로그인
+              {isRegisterMode ? '회원가입' : '로그인'}
             </button>
           </form>
-
-          <div style={{ fontSize: 12, color: '#94a3b8', textAlign: 'center', marginTop: 18 }}>
-            <span style={{ color: '#64748b' }}>아직 계정이 없으신가요? </span>
-            <span style={{ color: '#2563eb', cursor: 'pointer', fontWeight: 600 }} onClick={() => navigate('/register')}>
-              회원가입
-            </span>
-          </div>
         </div>
-
         <div style={{ textAlign: 'center', marginTop: 16, fontSize: 11, color: '#94a3b8' }}>
-          개발 모드: 아무 이메일/비밀번호나 입력 후 로그인
+          {isRegisterMode
+            ? '이메일과 비밀번호로 새 계정을 생성해주세요.'
+            : '회원가입한 이메일과 비밀번호로 로그인해주세요.'}
         </div>
       </div>
     </div>
   )
 }
 
-function Field({ label, type, value, onChange, placeholder }) {
+function Field({ label, type, value, onChange, placeholder, autoComplete }) {
   const [focused, setFocused] = useState(false)
+
   return (
     <div>
       <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 6 }}>{label}</label>
       <input
-        type={type} value={value} placeholder={placeholder}
+        type={type}
+        value={value}
+        placeholder={placeholder}
+        autoComplete={autoComplete}
         onChange={e => onChange(e.target.value)}
-        onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
         style={{
           width: '100%', padding: '10px 12px', borderRadius: 8, fontSize: 13,
           border: `1px solid ${focused ? '#2563eb' : '#e2e8f0'}`,
