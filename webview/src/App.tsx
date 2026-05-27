@@ -43,6 +43,8 @@ type State = {
   parsedCode: ParsedCode | null;
   analysisOpen: boolean;
   isPublic: boolean;
+  isLoggedIn: boolean;
+  nickname: string;
 };
 
 
@@ -56,11 +58,14 @@ type Action =
   | { type: 'DELETE_COMMENT'; index: number }
   | { type: 'SET_PARSED_CODE'; value: ParsedCode | null }
   | { type: 'TOGGLE_ANALYSIS' }
+  | { type: 'SET_AUTH_STATUS'; isLoggedIn: boolean; nickname: string }
   | { type: 'TOGGLE_PUBLIC' };
 
 const initialState: State = {
   payload: { code: '', languageId: '', fileName: '' },
   copied: false,
+  isLoggedIn: false,
+  nickname: '',
   generatedComment: '',
   savedComments: [],
   selectedIndex: null,
@@ -83,6 +88,15 @@ function reducer(state: State, action: Action): State {
         parsedCode: null,
         analysisOpen: false,
         isPublic: false,
+        isLoggedIn: state.isLoggedIn,
+        nickname: state.nickname,
+      };
+
+    case 'SET_AUTH_STATUS':
+      return {
+        ...state,
+        isLoggedIn: action.isLoggedIn,
+        nickname: action.nickname,
       };
 
     case 'SET_COPIED':
@@ -141,7 +155,7 @@ const LANG_LABELS: Record<string, string> = {
 };
 
 function App() {
-  const [{ payload, copied, generatedComment, savedComments, selectedIndex, parsedCode, analysisOpen, isPublic }, dispatch] = useReducer(reducer, initialState);
+  const [{ payload, copied, generatedComment, savedComments, selectedIndex, parsedCode, analysisOpen, isPublic, isLoggedIn, nickname }, dispatch] = useReducer(reducer, initialState);
 
   useEffect(() => {
     const handler = (event: MessageEvent) => {
@@ -156,6 +170,16 @@ function App() {
       }
       if (message.type === 'setParsedCode') {
         dispatch({ type: 'SET_PARSED_CODE', value: JSON.parse(message.text) });
+      }
+
+      if (message.type === 'setAuthStatus') {
+        const auth = JSON.parse(message.text);
+
+        dispatch({
+          type: 'SET_AUTH_STATUS',
+          isLoggedIn: auth.isLoggedIn,
+          nickname: auth.nickname ?? '',
+        });
       }
     };
 
@@ -394,9 +418,21 @@ function App() {
                   <button
                     className="neco-delete-btn"
                     onClick={(e) => {
-                      e.stopPropagation(); // 토글 클릭 방지
-                      dispatch({ type: 'DELETE_COMMENT', index: i });
-                    }}
+                    e.stopPropagation();
+
+                    vscode.postMessage({
+                      type: 'deleteNote',
+                      payload: {
+                        index: i,
+                        code: item.code
+                      }
+                    });
+
+                    dispatch({
+                      type: 'DELETE_COMMENT',
+                      index: i
+                    });
+                  }}
                   >
                     ✕
                   </button>
@@ -448,12 +484,18 @@ function App() {
           </ul>
         </div>
       )}
-      <button
-        className="neco-login-btn"
-        onClick={handleLogin}
-      >
-        로그인
-      </button>
+      {isLoggedIn ? (
+        <div className="neco-login-btn">
+          ✅ {nickname || '사용자'}님 로그인됨
+        </div>
+      ) : (
+        <button
+          className="neco-login-btn"
+          onClick={handleLogin}
+        >
+          로그인
+        </button>
+      )}
       <footer className="neco-footer">
         NECO · 친절한 AI 코딩 친구
       </footer>

@@ -50,7 +50,15 @@ async function activate(context) {
     console.log('[NECO] env GEMINI:', !!process.env.GEMINI_API_KEY);
     (0, localServerService_1.startLocalServer)();
     await (0, treeParser_1.initParser)(context.extensionUri);
-    const provider = new NecoViewProvider_1.NecoViewProvider(context.extensionUri);
+    const provider = new NecoViewProvider_1.NecoViewProvider(context.extensionUri, context);
+    (0, localServerService_1.setAuthHandler)(async (token, nickname) => {
+        await context.secrets.store('necoToken', token);
+        vscode.window.showInformationMessage('NECO 로그인 완료 ✅');
+        provider.sendMessage('setAuthStatus', JSON.stringify({
+            isLoggedIn: true,
+            nickname
+        }));
+    });
     context.subscriptions.push(vscode.commands.registerCommand('neco.addComment', addCommentCommand_1.addCommentFromSelection), vscode.window.registerWebviewViewProvider('necoSidebarView', provider), (0, selectionSyncService_1.handleSelectionChange)(provider, context.extensionUri));
 }
 function deactivate() {

@@ -215,26 +215,60 @@ export default function AddNotePage() {
     return e
   }
 
-  const handleSubmit = () => {
-    const e = validate()
-    if (Object.keys(e).length>0) { setErrors(e); return }
-    setSubmitting(true)
+  const handleSubmit = async () => {
+  const e = validate()
 
-    if (isEdit) {
-      updateUserNote(Number(id), { ...form, tags: form.tags })
-      updateNote(Number(id), { ...form, tags: form.tags.map((name,i)=>({id:Number(id)*100+i,name})) })
-      toast({ message:'문제가 수정됐습니다! ✓', type:'success' })
-      navigate(`/notes/${id}`)
-    } else {
-      const note = addUserNote(form)
+  if (Object.keys(e).length > 0) {
+    setErrors(e)
+    return
+  }
+
+  setSubmitting(true)
+
+  if (isEdit) {
+    updateUserNote(Number(id), { ...form, tags: form.tags })
+    updateNote(Number(id), {
+      ...form,
+      tags: form.tags.map((name, i) => ({
+        id: Number(id) * 100 + i,
+        name
+      }))
+    })
+
+    setSubmitting(false)
+
+    toast({
+      message: '문제가 수정됐습니다! ✓',
+      type: 'success'
+    })
+
+    navigate(`/notes/${id}`)
+  } else {
+    try {
+      const note = await addUserNote(form)
+
       addNote(note)
       localStorage.removeItem(DRAFT_KEY)
       setSubmitting(false)
       setSuccess(true)
-      toast({ message:'문제가 추가됐습니다! 📝', type:'success' })
-      setTimeout(()=>navigate('/notes'), 1200)
+
+      toast({
+        message: '문제가 DB에 저장됐습니다! 📝',
+        type: 'success'
+      })
+
+      setTimeout(() => navigate('/notes'), 1200)
+    } catch (error) {
+      console.error(error)
+      setSubmitting(false)
+
+      toast({
+        message: error.message || '저장에 실패했습니다.',
+        type: 'error'
+      })
     }
   }
+}
 
   if (success) return (
     <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', minHeight:320, gap:14 }}>

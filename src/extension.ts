@@ -5,7 +5,11 @@ import { NecoViewProvider } from './NecoViewProvider';
 import { addCommentFromSelection } from './commands/addCommentCommand';
 import { handleSelectionChange } from './services/selectionSyncService';
 import { initParser } from './services/parser/treeParser';
-import { startLocalServer, stopLocalServer } from './services/localServerService';
+import {
+	startLocalServer,
+	stopLocalServer,
+	setAuthHandler
+} from './services/localServerService';
 
 export async function activate(context: vscode.ExtensionContext) {
 	const envPath = path.join(context.extensionPath, '.env');
@@ -17,7 +21,24 @@ export async function activate(context: vscode.ExtensionContext) {
 	startLocalServer();
 	await initParser(context.extensionUri);
 
-	const provider = new NecoViewProvider(context.extensionUri);
+	const provider = new NecoViewProvider(
+		context.extensionUri,
+		context
+	);
+
+	setAuthHandler(async (token, nickname) => {
+		await context.secrets.store('necoToken', token);
+
+		vscode.window.showInformationMessage('NECO 로그인 완료 ✅');
+
+		provider.sendMessage(
+			'setAuthStatus',
+			JSON.stringify({
+				isLoggedIn: true,
+				nickname
+			})
+		);
+	});
 
 	context.subscriptions.push(
 		vscode.commands.registerCommand('neco.addComment', addCommentFromSelection),
@@ -27,5 +48,5 @@ export async function activate(context: vscode.ExtensionContext) {
 }
 
 export function deactivate() {
-  stopLocalServer();
+	stopLocalServer();
 }

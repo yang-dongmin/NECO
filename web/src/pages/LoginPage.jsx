@@ -49,15 +49,48 @@ export default function LoginPage() {
       }
 
       login(
-        {
-          id: data.user.id,
-          name: data.user.nickname,
-          email: data.user.email,
-        },
-        data.token
-      )
+      {
+        id: data.user.id,
+        name: data.user.nickname,
+        email: data.user.email,
+      },
+      data.token
+    )
 
-      navigate('/')
+   login(
+{
+  id: data.user.id,
+  name: data.user.nickname,
+  email: data.user.email,
+},
+data.token
+)
+
+try {
+  await fetch(
+    'http://localhost:3939/api/auth/vscode-login',
+    {
+      method: 'POST',
+
+      headers: {
+        'Content-Type': 'application/json'
+      },
+
+      body: JSON.stringify({
+        token: data.token,
+        nickname: data.user.nickname
+      })
+    }
+  )
+} catch (error) {
+  console.error(
+    'VSCode 로그인 동기화 실패',
+    error
+  )
+}
+
+navigate('/')
+
     } catch (error) {
       console.error(error)
       setError('서버에 연결할 수 없습니다.')

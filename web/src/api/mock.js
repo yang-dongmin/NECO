@@ -132,19 +132,54 @@ export function getAllNotes() {
 }
 export function invalidateCache() { _cache = null }
 
-export function addUserNote(fields) {
-  const existing = loadUserNotes()
-  const maxId    = Math.max(0, ...existing.map(n=>n.id), ...MOCK_NOTES.map(n=>n.id))
-  const note = {
-    id: maxId + 1,
+export async function addUserNote(fields) {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    throw new Error("로그인이 필요합니다.");
+  }
+
+  const payload = {
+    code: fields.wrongCode || "",
+    comment: fields.explanation || "",
+    parsedCode: null,
+    isPublic: false,
+    languageId: fields.language || null,
+    fileName: null,
+    quiz: {
+      subject: fields.subject || null,
+      year: fields.year || null,
+      round: fields.round || null,
+      fixedCode: fields.fixedCode || null,
+      tags: fields.tags || [],
+    }
+  };
+
+  const response = await fetch("http://localhost:5001/api/notes", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`
+    },
+    body: JSON.stringify(payload)
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "저장 실패");
+  }
+
+  return {
+    id: data.noteId,
     reviewCount: 0,
     createdAt: new Date().toISOString(),
-    year: new Date().getFullYear(), round: 1,
     ...fields,
-    tags: (fields.tags ?? []).map((name, i) => ({ id: maxId+100+i, name })),
-  }
-  saveUserNotes([note, ...existing])
-  return note
+    tags: (fields.tags ?? []).map((name, i) => ({
+      id: i + 1,
+      name
+    })),
+  };
 }
 
 export function updateUserNote(id, fields) {
