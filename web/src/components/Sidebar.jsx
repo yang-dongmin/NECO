@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { BookOpen, LayoutDashboard, RotateCcw, BarChart2, Plus, Star } from 'lucide-react'
+import { BookOpen, LayoutDashboard, RotateCcw, BarChart2, Plus, Star, Globe2  } from 'lucide-react'
 import { useAuthStore, useNoteStore } from '../store'
 import { useSrsStore } from '../store/srsStore'
 import { getAllNotes, SUBJECTS } from '../api/mock'
@@ -8,8 +8,9 @@ import logo from "../assets/neco.png";
 const NAV = [
   { to:'/',      icon:LayoutDashboard, label:'대시보드'     },
   { to:'/notes', icon:BookOpen,        label:'문제 목록'    },
+  { to:'/public-notes',icon: Globe2,   label: '공개 문제'   },
   { to:'/srs',   icon:RotateCcw,       label:'복습 스케줄러', srs:true },
-  { to:'/stats', icon:BarChart2,        label:'통계'         },
+  { to:'/stats', icon:BarChart2,       label:'통계'         },
 ]
 
 export default function Sidebar() {

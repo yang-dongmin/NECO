@@ -1,45 +1,79 @@
-// VSCode 확장의 로컬 서버(3939)와 통신하는 API
+// 백엔드 서버와 통신하는 API
+const BASE = 'http://localhost:5001/api'
 
-const BASE = 'http://localhost:3939/api';
+// localStorage에서 로그인 토큰 가져오기
+function getToken() {
+  return localStorage.getItem('token')
+}
+
+// 인증 헤더 만들기
+function getAuthHeaders() {
+  const token = getToken()
+
+  return {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${token}`,
+  }
+}
 
 // 내 전체 노트 가져오기
 export async function fetchMyNotes() {
   try {
-    const res = await fetch(`${BASE}/notes`);
-    if (!res.ok) throw new Error('서버 응답 오류');
-    return await res.json();
-  } catch {
-    console.warn('[NECO] 로컬 서버에 연결할 수 없어요. VSCode를 열어주세요.');
-    return [];
+    const res = await fetch(`${BASE}/notes`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    })
+
+    if (!res.ok) {
+      throw new Error('서버 응답 오류')
+    }
+
+    return await res.json()
+  } catch (error) {
+    console.error('[NECO] 내 노트 조회 실패:', error)
+    return []
   }
 }
 
-// 공개 노트(문제) 가져오기
+// 공개 노트 가져오기
+// 아직 백엔드에 /notes/public이 없다면 나중에 추가할 예정
 export async function fetchPublicNotes() {
   try {
-    const res = await fetch(`${BASE}/notes/public`);
-    if (!res.ok) throw new Error('서버 응답 오류');
-    return await res.json();
-  } catch {
-    console.warn('[NECO] 로컬 서버에 연결할 수 없어요.');
-    return [];
+    const res = await fetch(`${BASE}/notes/public`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    })
+
+    if (!res.ok) {
+      throw new Error('서버 응답 오류')
+    }
+
+    return await res.json()
+  } catch (error) {
+    console.error('[NECO] 공개 노트 조회 실패:', error)
+    return []
   }
 }
 
-// 실시간 업데이트 (WebSocket)
-// onNewNote: 새 노트 저장됐을 때 콜백
-export function subscribeToNotes(onNewNote) {
+export async function fetchNoteById(id) {
   try {
-    const ws = new WebSocket('ws://localhost:3939');
-    ws.onmessage = (event) => {
-      const { type, data } = JSON.parse(event.data);
-      if (type === 'newNote') onNewNote(data);
-    };
-    ws.onerror = () => {
-      console.warn('[NECO] WebSocket 연결 실패. VSCode를 열어주세요.');
-    };
-    return () => ws.close(); // cleanup 함수 반환
-  } catch {
-    return () => {};
+    const res = await fetch(`${BASE}/notes/${id}`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    })
+
+    if (!res.ok) {
+      throw new Error('서버 응답 오류')
+    }
+
+    return await res.json()
+  } catch (error) {
+    console.error('[NECO] 노트 상세 조회 실패:', error)
+    return null
   }
+}
+
+// 지금은 DB 서버 기준으로 갈 거라 WebSocket은 일단 사용하지 않음
+export function subscribeToNotes() {
+  return () => {}
 }

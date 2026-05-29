@@ -93,6 +93,87 @@ router.get("/", authMiddleware, async (req, res) => {
     }
 });
 
+router.get("/public", authMiddleware, async (req, res) => {
+    try {
+        const [rows] = await db.query(
+            `
+            SELECT
+                cn.id,
+                cn.code,
+                cn.comment,
+                cn.parsed_code AS parsedCode,
+                cn.is_public AS isPublic,
+                cn.language_id AS languageId,
+                cn.file_name AS fileName,
+                cn.quiz,
+                cn.created_at AS createdAt,
+                u.id AS authorId,
+                u.nickname AS authorNickname
+            FROM code_notes cn
+            JOIN users u ON cn.user_id = u.id
+            WHERE cn.is_public = 1
+            ORDER BY cn.created_at DESC
+            `
+        );
+
+        res.json(rows);
+
+    } catch (error) {
+        console.error("공개 문제 조회 에러:", error);
+
+        res.status(500).json({
+            message: "서버 오류"
+        });
+    }
+});
+
+router.get("/:id", authMiddleware, async (req, res) => {
+    try {
+        const noteId = req.params.id;
+
+        const [rows] = await db.query(
+            `
+            SELECT
+                cn.id,
+                cn.code,
+                cn.comment,
+                cn.parsed_code AS parsedCode,
+                cn.is_public AS isPublic,
+                cn.language_id AS languageId,
+                cn.file_name AS fileName,
+                cn.quiz,
+                cn.created_at AS createdAt,
+                u.id AS authorId,
+                u.nickname AS authorNickname
+            FROM code_notes cn
+            JOIN users u ON cn.user_id = u.id
+            WHERE cn.id = ?
+                AND (cn.user_id = ? OR cn.is_public = 1)
+            LIMIT 1
+            `,
+            [
+                noteId,
+                req.user.id
+            ]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({
+                message: "노트를 찾을 수 없습니다."
+            });
+        }
+
+        res.json(rows[0]);
+
+    } catch (error) {
+        console.error("주석 상세 조회 에러:", error);
+
+        res.status(500).json({
+            message: "서버 오류"
+        });
+    }
+});
+
 router.delete("/:id", authMiddleware, async (req, res) => {
     try {
         const noteId = req.params.id;

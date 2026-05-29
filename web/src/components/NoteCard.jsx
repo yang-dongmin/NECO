@@ -18,7 +18,20 @@ export default function NoteCard({ note }) {
   const card      = getCard(note.id)
   const mastery   = card.repetitions > 0 ? masteryLevel(card.ef) : null
   const barColor  = mastery ? MASTERY_COLORS[mastery.label] : MASTERY_COLORS.default
-  const preview = (note.wrongCode || note.code || '').split('\n').slice(0, 3).join('\n')
+  const quiz =
+    typeof note.quiz === 'string'
+      ? JSON.parse(note.quiz)
+      : note.quiz
+
+  const language = note.languageId || note.language || 'text'
+  const fileName = note.fileName || note.title || ''
+  const author = note.authorNickname || note.author || ''
+  const previewSource = quiz?.blankedCode || note.wrongCode || note.code || ''
+
+  const preview = previewSource
+    .split('\n')
+    .slice(0, 3)
+    .join('\n')
 
   return (
     <div
@@ -45,6 +58,45 @@ export default function NoteCard({ note }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
           {note.subject && <SubjectBadge subjectId={note.subject} size="sm" />}
           {note.year && <RoundBadge year={note.year} round={note.round} />}
+          <span style={{
+            fontSize: 10,
+            fontWeight: 600,
+            padding: '2px 7px',
+            borderRadius: 999,
+            background: '#eff6ff',
+            color: '#2563eb',
+            border: '1px solid #dbeafe'
+          }}>
+            {language}
+          </span>
+
+          {fileName && (
+            <span style={{
+              fontSize: 10,
+              fontWeight: 500,
+              padding: '2px 7px',
+              borderRadius: 999,
+              background: '#f8fafc',
+              color: '#64748b',
+              border: '1px solid #e2e8f0'
+            }}>
+              📄 {fileName}
+            </span>
+          )}
+
+          {author && (
+            <span style={{
+              fontSize: 10,
+              fontWeight: 500,
+              padding: '2px 7px',
+              borderRadius: 999,
+              background: '#f8fafc',
+              color: '#64748b',
+              border: '1px solid #e2e8f0'
+            }}>
+              작성자 {author}
+            </span>
+          )}
           {/* 숙련도 텍스트 배지 */}
           {mastery && (
             <span style={{
@@ -62,7 +114,9 @@ export default function NoteCard({ note }) {
 
         {/* 태그 */}
         <div style={{ display: 'flex', gap: 4, marginBottom: 10, flexWrap: 'wrap' }}>
-          {(note.tags || []).slice(0, 3).map(t => <TagBadge key={t.id} name={t.name} />)}
+          {(note.tags || []).slice(0, 3).map(t => (
+            <TagBadge key={t.id || t.name} name={t.name} />
+          ))}
         </div>
 
         {/* 문제 미리보기 */}
@@ -70,7 +124,7 @@ export default function NoteCard({ note }) {
           background: '#f8fafc', border: '1px solid #f1f5f9', borderRadius: 8,
           padding: '10px 12px', marginBottom: 12,
           fontSize: 12.5, color: '#334155', lineHeight: 1.7,
-          fontFamily: (note.languageId || note.language) !== 'theory' ? 'JetBrains Mono, monospace' : 'inherit',
+          fontFamily: language !== 'theory' ? 'JetBrains Mono, monospace' : 'inherit',
           overflow: 'hidden', maxHeight: 68,
           display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical',
         }}>
@@ -108,7 +162,9 @@ export default function NoteCard({ note }) {
           )}
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#94a3b8' }}>
             <Clock size={11} />
-            {new Date(note.createdAt).toLocaleDateString('ko-KR')}
+            {note.createdAt
+              ? new Date(note.createdAt).toLocaleDateString('ko-KR')
+              : '날짜 없음'}
           </div>
         </div>
       </div>
