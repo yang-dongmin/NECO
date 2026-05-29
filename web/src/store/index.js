@@ -1,23 +1,31 @@
 import { create } from 'zustand'
 
 export const useAuthStore = create((set) => ({
-  user:  null,
-  token: localStorage.getItem('ct_token') ?? null,
-  login:  (user, token) => { localStorage.setItem('ct_token', token); set({ user, token }) },
-  logout: ()            => { localStorage.removeItem('ct_token');      set({ user: null, token: null }) },
+  user: null,
+  token: localStorage.getItem('token') ?? null,
+
+  login: (user, token) => {
+    localStorage.setItem('token', token)
+    set({ user, token })
+  },
+
+  logout: () => {
+    localStorage.removeItem('token')
+    set({ user: null, token: null })
+  },
 }))
 
 export const useNoteStore = create((set) => ({
-  notes:      [],
+  notes: [],
   pagination: { total: 0, page: 1, totalPages: 1 },
   // ★ subject, q 추가
-  filters:    { tag: '', lang: '', subject: '', q: '', page: 1 },
-  stats:      null,
-  tags:       [],
+  filters: { tag: '', lang: '', subject: '', q: '', page: 1 },
+  stats: null,
+  tags: [],
 
   setNotes: (notes, pagination) => set({ notes, pagination }),
   setStats: (stats) => set({ stats }),
-  setTags:  (tags)  => set({ tags }),
+  setTags: (tags) => set({ tags }),
 
   setFilter: (key, value) =>
     set((s) => ({ filters: { ...s.filters, [key]: value, page: 1 } })),
@@ -30,13 +38,13 @@ export const useNoteStore = create((set) => ({
 
   addNote: (note) =>
     set((s) => ({
-      notes:      [note, ...s.notes],
+      notes: [note, ...s.notes],
       pagination: { ...s.pagination, total: s.pagination.total + 1 },
     })),
 
   deleteNote: (id) =>
     set((s) => ({
-      notes:      s.notes.filter((n) => n.id !== id),
+      notes: s.notes.filter((n) => n.id !== id),
       pagination: { ...s.pagination, total: Math.max(0, s.pagination.total - 1) },
     })),
 

@@ -50,9 +50,11 @@
     "build:all": "npm run build:webview && npm run compile"
   },
   "devDependencies": {
+    "@types/express": "^5.0.6",
     "@types/mocha": "^10.0.10",
     "@types/node": "22.x",
     "@types/vscode": "^1.110.0",
+    "@types/ws": "^8.18.1",
     "@vscode/test-cli": "^0.0.12",
     "@vscode/test-electron": "^2.5.2",
     "eslint": "^9.39.3",
@@ -61,8 +63,12 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
+    "bcrypt": "^6.0.0",
     "dotenv": "^17.4.1",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
     "tree-sitter-wasms": "^0.1.13",
-    "web-tree-sitter": "^0.22.6"
+    "web-tree-sitter": "^0.22.6",
+    "ws": "^8.20.1"
   }
 }

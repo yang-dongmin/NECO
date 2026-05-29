@@ -5,9 +5,167 @@ Webview(React + Vite)를 활용하여 UI를 제공합니다.
 
 ---
 
-## 📌 2026.04.19 - 변경 사항
+## 📌 실행 방법(2026.05.17)
+
+## 1. 프로젝트 클론
+
+```bash
+git clone https://github.com/yang-dongmin/NECO.git
+cd NECO
+```
 
 ---
+
+## 2. 환경 변수 파일 생성
+
+아래 위치에 `.env` 파일을 생성합니다.
+
+```txt
+NECO/.env
+NECO/backend/.env
+```
+
+### backend/.env 예시
+
+```env
+DB_HOST=127.0.0.1
+DB_USER=root
+DB_PASSWORD=본인_MySQL_비밀번호
+DB_NAME=neco
+JWT_SECRET=neco_secret_key
+PORT=5000
+```
+
+> `DB_PASSWORD`에는 본인 MySQL root 비밀번호를 입력합니다.
+
+---
+
+## 3. 의존성 설치
+
+각 폴더에서 `npm install`을 실행합니다.
+
+### 루트
+
+```bash
+npm install
+```
+
+### backend
+
+```bash
+cd backend
+npm install
+cd ..
+```
+
+### webview
+
+```bash
+cd webview
+npm install
+cd ..
+```
+
+### web
+
+```bash
+cd web
+npm install
+cd ..
+```
+
+---
+
+## 4. webview 빌드
+
+```bash
+cd webview
+npm run build
+cd ..
+```
+
+---
+
+## 5. TypeScript 빌드
+
+프로젝트 루트에서 실행합니다.
+
+```bash
+npx tsc
+```
+
+---
+
+## 6. MySQL 설치 및 DB 생성
+
+MySQL을 설치한 뒤 MySQL Workbench에서 `backend/database/schema.sql` 파일 내용을 실행합니다.
+
+### schema.sql
+
+```sql
+CREATE DATABASE IF NOT EXISTS neco
+DEFAULT CHARACTER SET utf8mb4
+COLLATE utf8mb4_unicode_ci;
+
+USE neco;
+
+CREATE TABLE IF NOT EXISTS users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    nickname VARCHAR(100) NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+실행 후 아래 SQL로 확인할 수 있습니다.
+
+```sql
+USE neco;
+SHOW TABLES;
+DESC users;
+```
+
+---
+
+## 7. 실행
+
+터미널을 2개 열어서 각각 실행합니다.
+
+### 터미널 1: 웹페이지 실행
+
+```bash
+cd web
+npm run dev
+```
+
+### 터미널 2: 백엔드 실행
+
+```bash
+cd backend
+node server.js
+```
+
+---
+
+## 8. 회원가입 확인
+
+웹페이지에서 회원가입을 진행한 뒤 MySQL Workbench에서 아래 SQL을 실행합니다.
+
+```sql
+USE neco;
+
+SELECT id, email, nickname, created_at
+FROM users;
+```
+
+회원 정보가 조회되면 MySQL 연동이 정상적으로 된 것입니다.
+
+---
+
+## 📌 2026.04.19 - 변경 사항
+
+
 
 ### 1️⃣ 프로그램 내 코드들이 출력되는 부분들을 보완 및 수정.
 

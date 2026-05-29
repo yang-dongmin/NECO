@@ -4,6 +4,7 @@ import { Plus, Star, ArrowUpDown } from 'lucide-react'
 import { useNoteStore } from '../store'
 import { useSrsStore } from '../store/srsStore'
 import { getAllNotes, MOCK_TAGS, SUBJECTS, isBookmarked, invalidateCache } from '../api/mock'
+import { useMyNotes } from '../hooks/useNecoNotes'
 import { isDue } from '../lib/sm2'
 import NoteCard from '../components/NoteCard'
 import { TagBadge, EmptyState } from '../components/ui'
@@ -31,13 +32,17 @@ export default function NoteListPage() {
   const [showSort, setShowSort] = useState(false)
   const navigate = useNavigate()
 
+  const { notes: necoNotes, loading: necoLoading } = useMyNotes()
+
   useEffect(() => {
     invalidateCache()
-    const all = getAllNotes()
-    setAllNotes(all)
+    const mockAll = getAllNotes()
+    // VSCode에서 저장한 노트 + mock 데이터 합치기
+    const combined = [...necoNotes, ...mockAll]
+    setAllNotes(combined)
     setTags(MOCK_TAGS)
-    setNotes(all, { total: all.length })
-  }, [])
+    setNotes(combined, { total: combined.length })
+  }, [necoNotes])
 
   // ★ useMemo로 필터+정렬 메모이제이션
   const displayed = useMemo(() => {

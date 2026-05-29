@@ -5,6 +5,7 @@ declare function acquireVsCodeApi(): {
   postMessage: (msg: unknown) => void;
 };
 
+
 const vscode = acquireVsCodeApi();
 
 interface CodePayload {
@@ -41,6 +42,9 @@ type State = {
   selectedIndex: number | null;
   parsedCode: ParsedCode | null;
   analysisOpen: boolean;
+  isPublic: boolean;
+  isLoggedIn: boolean;
+  nickname: string;
 };
 
 
@@ -53,16 +57,21 @@ type Action =
   | { type: 'SET_SELECTED_INDEX'; value: number | null }
   | { type: 'DELETE_COMMENT'; index: number }
   | { type: 'SET_PARSED_CODE'; value: ParsedCode | null }
-  | { type: 'TOGGLE_ANALYSIS' };
+  | { type: 'TOGGLE_ANALYSIS' }
+  | { type: 'SET_AUTH_STATUS'; isLoggedIn: boolean; nickname: string }
+  | { type: 'TOGGLE_PUBLIC' };
 
 const initialState: State = {
   payload: { code: '', languageId: '', fileName: '' },
   copied: false,
+  isLoggedIn: false,
+  nickname: '',
   generatedComment: '',
   savedComments: [],
   selectedIndex: null,
   parsedCode: null,
   analysisOpen: false,
+  isPublic: false,
 };
 
 
@@ -78,6 +87,16 @@ function reducer(state: State, action: Action): State {
         selectedIndex: null,
         parsedCode: null,
         analysisOpen: false,
+        isPublic: false,
+        isLoggedIn: state.isLoggedIn,
+        nickname: state.nickname,
+      };
+
+    case 'SET_AUTH_STATUS':
+      return {
+        ...state,
+        isLoggedIn: action.isLoggedIn,
+        nickname: action.nickname,
       };
 
     case 'SET_COPIED':
@@ -106,7 +125,8 @@ function reducer(state: State, action: Action): State {
 
     case 'TOGGLE_ANALYSIS':
       return { ...state, analysisOpen: !state.analysisOpen };
-
+    case 'TOGGLE_PUBLIC':
+      return { ...state, isPublic: !state.isPublic }; 
       
 
     default:
@@ -135,7 +155,7 @@ const LANG_LABELS: Record<string, string> = {
 };
 
 function App() {
-  const [{ payload, copied, generatedComment, savedComments, selectedIndex, parsedCode, analysisOpen }, dispatch] = useReducer(reducer, initialState);
+  const [{ payload, copied, generatedComment, savedComments, selectedIndex, parsedCode, analysisOpen, isPublic, isLoggedIn, nickname }, dispatch] = useReducer(reducer, initialState);
 
   useEffect(() => {
     const handler = (event: MessageEvent) => {
@@ -150,6 +170,16 @@ function App() {
       }
       if (message.type === 'setParsedCode') {
         dispatch({ type: 'SET_PARSED_CODE', value: JSON.parse(message.text) });
+      }
+
+      if (message.type === 'setAuthStatus') {
+        const auth = JSON.parse(message.text);
+
+        dispatch({
+          type: 'SET_AUTH_STATUS',
+          isLoggedIn: auth.isLoggedIn,
+          nickname: auth.nickname ?? '',
+        });
       }
     };
 
@@ -176,31 +206,50 @@ function App() {
   }, [generatedComment]);
 
   const handleSave = useCallback(() => {
-  if (!generatedComment) return;
+    if (!generatedComment) return;
 
-  const isDuplicate = savedComments.some(
-    (item) => item.code === payload.code
-  );
+    const isDuplicate = savedComments.some(
+      (item) => item.code === payload.code
+    );
 
-  if (isDuplicate) {
-    vscode.postMessage({ 
-      type: 'showMessage', 
-      text: '이미 저장된 코드입니다!' 
+    if (isDuplicate) {
+      vscode.postMessage({
+        type: 'showMessage',
+        text: '이미 저장된 코드입니다!'
+      });
+      return;
+    }
+
+    vscode.postMessage({
+      type: 'saveNote',
+      payload: {
+        code: payload.code,
+        comment: generatedComment,
+        parsedCode: parsedCode,
+        isPublic: isPublic,
+        languageId: payload.languageId,
+        fileName: payload.fileName,
+      }
     });
-    return;
-  }
 
     dispatch({
       type: 'SAVE_COMMENT',
       value: { comment: generatedComment, code: payload.code, parsedCode }
     });
-}, [generatedComment, savedComments, payload.code]);
+  }, [generatedComment, savedComments, payload, parsedCode, isPublic]);
 
   const { lineCount, charCount, langLabel } = useMemo(() => ({
     lineCount: payload.code ? payload.code.split('\n').length : 0,
     charCount: payload.code.length,
     langLabel: LANG_LABELS[payload.languageId] ?? payload.languageId ?? '',
   }), [payload.code, payload.languageId]);
+
+  const handleLogin = () => {
+
+    vscode.postMessage({
+      type: "LOGIN"
+    });
+  };
 
   return (
     <div className="neco-root">
@@ -309,22 +358,36 @@ function App() {
               <div className="neco-preview-header">
                 <span className="neco-preview-title">주석 미리보기</span>
               </div>
-
               {generatedComment ? (
                 <>
                   <pre className="neco-preview-block"><code>{generatedComment}</code></pre>
-                  <button
-                    className="neco-save-btn"
-                    onClick={handleSave}
-                  >
-                    저장
+
+                  {/* 공개/비공개 토글 */}
+                  <div className="neco-public-toggle">
+                    <span className="neco-toggle-label">
+                      {isPublic ? '🌐 공개' : '🔒 비공개'}
+                    </span>
+                    <button
+                      className={`neco-toggle-btn ${isPublic ? 'public' : 'private'}`}
+                      onClick={() => dispatch({ type: 'TOGGLE_PUBLIC' })}
+                    >
+                      {isPublic ? 'ON' : 'OFF'}
+                    </button>
+                    {isPublic && (
+                      <span className="neco-public-hint">
+                        저장 시 자동으로 빈칸 문제가 생성돼요
+                      </span>
+                    )}
+                  </div>
+
+                  <button className="neco-save-btn" onClick={handleSave}>
+                    저장 {isPublic ? '(공개)' : '(비공개)'}
                   </button>
                 </>
               ) : (
                 <div className="neco-preview-empty">
                   AI 주석 생성 버튼을 누르면 여기에 결과가 표시돼요
                 </div>
-                
               )}
             </div>
           </>
@@ -355,9 +418,21 @@ function App() {
                   <button
                     className="neco-delete-btn"
                     onClick={(e) => {
-                      e.stopPropagation(); // 토글 클릭 방지
-                      dispatch({ type: 'DELETE_COMMENT', index: i });
-                    }}
+                    e.stopPropagation();
+
+                    vscode.postMessage({
+                      type: 'deleteNote',
+                      payload: {
+                        index: i,
+                        code: item.code
+                      }
+                    });
+
+                    dispatch({
+                      type: 'DELETE_COMMENT',
+                      index: i
+                    });
+                  }}
                   >
                     ✕
                   </button>
@@ -408,6 +483,18 @@ function App() {
             ))}
           </ul>
         </div>
+      )}
+      {isLoggedIn ? (
+        <div className="neco-login-btn">
+          ✅ {nickname || '사용자'}님 로그인됨
+        </div>
+      ) : (
+        <button
+          className="neco-login-btn"
+          onClick={handleLogin}
+        >
+          로그인
+        </button>
       )}
       <footer className="neco-footer">
         NECO · 친절한 AI 코딩 친구
