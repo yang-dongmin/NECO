@@ -10,11 +10,18 @@ import NoteCard from '../components/NoteCard'
 import { TagBadge, EmptyState } from '../components/ui'
 
 const LANGS = [
-  { value:'',       label:'전체 유형' },
-  { value:'theory', label:'이론형'   },
-  { value:'sql',    label:'SQL'      },
-  { value:'c',      label:'C언어'    },
-  { value:'python', label:'Python'   },
+  { value: '', label: '전체 언어' },
+  { value: 'javascript', label: 'JavaScript' },
+  { value: 'typescript', label: 'TypeScript' },
+  { value: 'javascriptreact', label: 'JSX' },
+  { value: 'typescriptreact', label: 'TSX' },
+  { value: 'python', label: 'Python' },
+  { value: 'java', label: 'Java' },
+  { value: 'c', label: 'C' },
+  { value: 'cpp', label: 'C++' },
+  { value: 'kotlin', label: 'Kotlin' },
+  { value: 'sql', label: 'SQL' },
+  { value: 'theory', label: '이론형' },
 ]
 
 const SORT_OPTIONS = [
@@ -47,10 +54,24 @@ export default function NoteListPage() {
   // ★ useMemo로 필터+정렬 메모이제이션
   const displayed = useMemo(() => {
     let f = [...allNotes]
-    if (filters.tag)      f = f.filter(n => n.tags.some(t => t.name === filters.tag))
-    if (filters.lang)     f = f.filter(n => n.language === filters.lang)
+    if (filters.tag)      f = f.filter(n => (n.tags || []).some(t => t.name === filters.tag))
+    if (filters.lang)     f = f.filter(n => (n.languageId || n.language) === filters.lang)
     if (filters.subject)  f = f.filter(n => n.subject  === filters.subject)
-    if (filters.q)        f = f.filter(n => n.wrongCode.includes(filters.q) || n.explanation.includes(filters.q))
+    if (filters.q) {
+      const q = filters.q.toLowerCase()
+
+      f = f.filter(n => {
+        const code = n.wrongCode || n.code || ''
+        const explanation = n.explanation || n.comment || ''
+        const fileName = n.fileName || ''
+
+        return (
+          code.toLowerCase().includes(q) ||
+          explanation.toLowerCase().includes(q) ||
+          fileName.toLowerCase().includes(q)
+        )
+      })
+    }
     if (filters.bookmark) f = f.filter(n => isBookmarked(n.id))
 
     // 정렬

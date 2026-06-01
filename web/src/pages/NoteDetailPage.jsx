@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import { ArrowLeft, CheckCircle2, Clock, BookOpen, Edit2, Trash2, Star, Share2 } from 'lucide-react'
-import { getAllNotes, deleteUserNote, isMockNote, toggleBookmark, isBookmarked } from '../api/mock'
+import { deleteUserNote, isMockNote, toggleBookmark, isBookmarked } from '../api/mock'
+import { fetchNoteById } from '../api/necoApi'
 import { useNoteStore } from '../store'
 import { SubjectBadge, RoundBadge, TagBadge } from '../components/ui'
 import { useToast } from '../components/Toast'
@@ -18,18 +19,36 @@ export default function NoteDetailPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
 
   useEffect(() => {
-    const found = getAllNotes().find(n => n.id === Number(id))
-    if (!found) navigate('/notes')
-    else {
+    async function loadNote() {
+      const found = await fetchNoteById(id)
+
+      if (!found) {
+        navigate('/notes')
+        return
+      }
+
       setNote(found)
       setBookmarked(isBookmarked(found.id))
     }
-  }, [id])
+
+    loadNote()
+  }, [id, navigate])
 
   if (!note) return null
 
-  const isMono   = note.language !== 'theory'
+  const quiz =
+    typeof note.quiz === 'string'
+      ? JSON.parse(note.quiz)
+      : note.quiz
+
+  const language = note.languageId || note.language || 'text'
+  const isMono = language !== 'theory'
   const canDelete = !isMockNote(note.id)
+
+  const problemCode = quiz?.blankedCode || note.wrongCode || note.code
+  const answer = quiz?.answer || note.fixedCode || '정답 데이터가 없습니다.'
+  const hint = quiz?.hint || ''
+  const explanation = note.comment || note.explanation || '해설 데이터가 없습니다.'
 
   const handleDelete = () => {
     deleteUserNote(note.id)
@@ -57,9 +76,40 @@ export default function NoteDetailPage() {
         <button onClick={()=>navigate('/notes')} style={{ display:'flex', alignItems:'center', gap:6, padding:'6px 12px', borderRadius:7, background:'#fff', border:'1px solid #e2e8f0', color:'#64748b', cursor:'pointer', fontSize:12 }}>
           <ArrowLeft size={13} /> 목록으로
         </button>
-        <SubjectBadge subjectId={note.subject} />
-        <RoundBadge year={note.year} round={note.round} />
-        {note.tags.map(t=><TagBadge key={t.id} name={t.name} />)}
+        {note.subject && <SubjectBadge subjectId={note.subject} />}
+        {note.year && <RoundBadge year={note.year} round={note.round} />}
+
+        <TagBadge name={language} />
+
+        {note.fileName && (
+          <span style={{
+            fontSize: 11,
+            color: '#64748b',
+            background: '#f8fafc',
+            border: '1px solid #e2e8f0',
+            borderRadius: 999,
+            padding: '3px 9px'
+          }}>
+            📄 {note.fileName}
+          </span>
+        )}
+
+        {note.authorNickname && (
+          <span style={{
+            fontSize: 11,
+            color: '#64748b',
+            background: '#f8fafc',
+            border: '1px solid #e2e8f0',
+            borderRadius: 999,
+            padding: '3px 9px'
+          }}>
+            작성자: {note.authorNickname}
+          </span>
+        )}
+
+        {(note.tags || []).map(t => (
+          <TagBadge key={t.id || t.name} name={t.name} />
+        ))}
 
         <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:8 }}>
           {/* 공유 버튼 */}
@@ -97,7 +147,7 @@ export default function NoteDetailPage() {
           <span style={{ fontSize:12, fontWeight:600, color:'#dc2626' }}>문제</span>
         </div>
         <pre style={{ margin:0, padding:'20px 22px', whiteSpace:'pre-wrap', wordBreak:'break-word', fontSize:isMono?13:14, fontFamily:isMono?'JetBrains Mono,monospace':'inherit', color:'#1e293b', lineHeight:1.85 }}>
-          {note.wrongCode}
+          {problemCode}
         </pre>
       </div>
 
@@ -107,9 +157,39 @@ export default function NoteDetailPage() {
           <CheckCircle2 size={14} color="#10b981" />
           <span style={{ fontSize:12, fontWeight:600, color:'#059669' }}>정답</span>
         </div>
-        <div style={{ padding:'16px 22px', fontSize:20, fontWeight:800, color:'#10b981' }}>{note.fixedCode}</div>
+        <div style={{ padding:'16px 22px', fontSize:20, fontWeight:800, color:'#10b981' }}>{answer}</div>
       </div>
 
+      {hint && (
+        <div style={{
+          background: '#fff',
+          border: '1px solid #e2e8f0',
+          borderRadius: 12,
+          overflow: 'hidden',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.06)'
+        }}>
+          <div style={{
+            padding: '10px 18px',
+            background: '#fffbeb',
+            borderBottom: '1px solid #fde68a',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8
+          }}>
+            <span style={{ fontSize: 14 }}>🧩</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#d97706' }}>힌트</span>
+          </div>
+
+          <div style={{
+            padding: '16px 22px',
+            fontSize: 13,
+            color: '#475569',
+            lineHeight: 1.8
+          }}>
+            {hint}
+          </div>
+        </div>
+      )}
       {/* 해설 */}
       <div style={{ background:'#fff', border:'1px solid #e2e8f0', borderRadius:12, overflow:'hidden', boxShadow:'0 1px 3px rgba(0,0,0,0.06)' }}>
         <div style={{ padding:'10px 18px', background:'#eff6ff', borderBottom:'1px solid #dbeafe', display:'flex', alignItems:'center', gap:8 }}>
@@ -124,9 +204,45 @@ export default function NoteDetailPage() {
             table: ({children})=><div style={{overflowX:'auto',marginBottom:10}}><table style={{borderCollapse:'collapse',width:'100%',fontSize:12}}>{children}</table></div>,
             th:    ({children})=><th style={{background:'#f1f5f9',padding:'6px 12px',border:'1px solid #e2e8f0',fontWeight:600,textAlign:'left'}}>{children}</th>,
             td:    ({children})=><td style={{padding:'6px 12px',border:'1px solid #e2e8f0',color:'#475569'}}>{children}</td>,
-          }}>{note.explanation}</ReactMarkdown>
+          }}>{explanation}</ReactMarkdown>
         </div>
       </div>
+
+      {note.code && (
+        <div style={{
+          background: '#fff',
+          border: '1px solid #e2e8f0',
+          borderRadius: 12,
+          overflow: 'hidden',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.06)'
+        }}>
+          <div style={{
+            padding: '10px 18px',
+            background: '#f8fafc',
+            borderBottom: '1px solid #e2e8f0',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8
+          }}>
+            <span style={{ fontSize: 14 }}>🧾</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>원본 코드</span>
+          </div>
+
+          <pre style={{
+            margin: 0,
+            padding: '20px 22px',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word',
+            fontSize: 13,
+            fontFamily: 'JetBrains Mono,monospace',
+            color: '#1e293b',
+            lineHeight: 1.85,
+            background: '#fff'
+          }}>
+            {note.code}
+          </pre>
+        </div>
+      )}
 
       {/* 복습 완료 버튼 */}
       <button onClick={()=>{ setReviewed(true); toast({ message:'복습 완료로 표시했습니다! ✓', type:'success' }) }} disabled={reviewed}
