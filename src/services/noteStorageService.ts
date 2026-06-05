@@ -15,6 +15,7 @@ export interface NecoNote {
   fileName: string;
   createdAt: string;
   quiz?: {
+    title?: string;
     blankedCode: string;
     answer: string;
     hint: string;

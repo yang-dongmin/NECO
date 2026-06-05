@@ -27,6 +27,10 @@ export default function NoteCard({ note }) {
   const fileName = note.fileName || note.title || ''
   const author = note.authorNickname || note.author || ''
   const previewSource = quiz?.blankedCode || note.wrongCode || note.code || ''
+  const noteTitle =
+    quiz?.title ||
+    note.title ||
+    (fileName ? `${fileName} 빈칸 문제` : `${language.toUpperCase()} 빈칸 문제`)
 
   const preview = previewSource
     .split('\n')
@@ -117,6 +121,17 @@ export default function NoteCard({ note }) {
           {(note.tags || []).slice(0, 3).map(t => (
             <TagBadge key={t.id || t.name} name={t.name} />
           ))}
+        </div>
+
+        {/* 제목 */}
+        <div style={{
+          fontSize: 17,
+          fontWeight: 800,
+          color: '#1e293b',
+          marginBottom: 10,
+          lineHeight: 1.4
+        }}>
+          {noteTitle}
         </div>
 
         {/* 문제 미리보기 */}

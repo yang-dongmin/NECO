@@ -201,6 +201,7 @@ export class NecoViewProvider implements vscode.WebviewViewProvider {
 
         if (quizResult.success) {
           note.quiz = {
+            title: quizResult.title ?? '',
             blankedCode: quizResult.blankedCode!,
             answer: quizResult.answer!,
             hint: quizResult.hint!,

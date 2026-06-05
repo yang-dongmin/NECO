@@ -162,6 +162,7 @@ class NecoViewProvider {
                 const quizResult = await (0, quizGeneratorService_1.generateQuiz)(code, comment, languageId);
                 if (quizResult.success) {
                     note.quiz = {
+                        title: quizResult.title ?? '',
                         blankedCode: quizResult.blankedCode,
                         answer: quizResult.answer,
                         hint: quizResult.hint,

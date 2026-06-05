@@ -4,6 +4,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 interface QuizResult {
   success: boolean;
+  title?: string;
   blankedCode?: string; // 빈칸이 [___]로 표시된 코드
   answer?: string;      // 정답
   hint?: string;        // 힌트
@@ -33,11 +34,20 @@ export async function generateQuiz(
 ${code}
 
 규칙:
-- 핵심 키워드나 표현 하나만 [___]로 바꿔라
-- 너무 쉬운 것(변수명 등)은 피해라
-- 반드시 아래 JSON 형식으로만 응답해라 (다른 텍스트 없이)
+- 문제는 사용자가 blankedCode만 보고 풀 수 있어야 한다.
+- 숨겨진 코드나 원본 코드를 봐야만 알 수 있는 답은 절대 빈칸으로 만들지 마라.
+- 사용자 정의 함수명, 변수명, 함수 호출 전체는 정답으로 만들지 마라.
+- 예를 들어 sum(10, 20), getx(x), gety(y) 같은 함수 호출 전체를 빈칸으로 만들지 마라.
+- 단, blankedCode 안에 해당 함수의 정의나 역할이 충분히 보이면 연산자, 키워드, 문법 요소는 빈칸으로 만들어도 된다.
+- 핵심 키워드나 표현 하나만 [___]로 바꿔라.
+- 너무 쉬운 것(단순 변수명 등)은 피해라.
+- title은 카드 목록에서 보일 짧은 제목으로 만들어라.
+- title은 20자 안팎의 자연스러운 한국어로 만들어라.
+- title에는 파일명을 넣지 마라.
+- 반드시 아래 JSON 형식으로만 응답해라. 다른 텍스트는 절대 쓰지 마라.
 
 {
+  "title": "문제 제목. 예: sum 함수 반환식 완성하기",
   "blankedCode": "빈칸이 [___]로 표시된 전체 코드",
   "answer": "정답 단어나 표현",
   "hint": "한 줄 힌트"
@@ -60,6 +70,7 @@ ${code}
 
     return {
       success: true,
+      title: parsed.title ?? '',
       blankedCode: parsed.blankedCode,
       answer: parsed.answer,
       hint: parsed.hint ?? '',

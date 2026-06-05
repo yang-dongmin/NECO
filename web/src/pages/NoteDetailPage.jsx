@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
-import { ArrowLeft, CheckCircle2, Clock, BookOpen, Edit2, Trash2, Star, Share2 } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, Clock, BookOpen, Edit2, Trash2, Star, Share2, Lightbulb } from 'lucide-react'
 import { deleteUserNote, isMockNote, toggleBookmark, isBookmarked } from '../api/mock'
 import { fetchNoteById } from '../api/necoApi'
 import { useNoteStore } from '../store'
@@ -17,6 +17,10 @@ export default function NoteDetailPage() {
   const [reviewed,  setReviewed]  = useState(false)
   const [bookmarked, setBookmarked] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [userAnswer, setUserAnswer] = useState('')
+  const [isCorrect, setIsCorrect] = useState(false)
+  const [answerMessage, setAnswerMessage] = useState('')
+  const [showHint, setShowHint] = useState(false)
 
   useEffect(() => {
     async function loadNote() {
@@ -49,6 +53,33 @@ export default function NoteDetailPage() {
   const answer = quiz?.answer || note.fixedCode || '정답 데이터가 없습니다.'
   const hint = quiz?.hint || ''
   const explanation = note.comment || note.explanation || '해설 데이터가 없습니다.'
+  const originalCode = note.code || quiz?.originalCode || ''
+  const normalizeCodeAnswer = (value) => {
+    return String(value)
+      .trim()
+      .replace(/\s+/g, '')
+  }
+
+  const normalizedAnswer = normalizeCodeAnswer(answer)
+  const normalizedUserAnswer = normalizeCodeAnswer(userAnswer)
+
+  const handleAnswerSubmit = (e) => {
+    e.preventDefault()
+
+    if (!userAnswer.trim()) {
+      setAnswerMessage('정답을 입력해주세요.')
+      return
+    }
+
+    if (normalizedUserAnswer === normalizedAnswer) {
+      setIsCorrect(true)
+      setAnswerMessage('정답입니다!')
+      toast({ message: '정답입니다! 🎉', type: 'success' })
+    } else {
+      setIsCorrect(false)
+      setAnswerMessage('아직 정답이 아닙니다. 다시 시도해보세요.')
+    }
+  }
 
   const handleDelete = () => {
     deleteUserNote(note.id)
@@ -151,15 +182,92 @@ export default function NoteDetailPage() {
         </pre>
       </div>
 
-      {/* 정답 */}
-      <div style={{ background:'#fff', border:'1px solid #e2e8f0', borderRadius:12, overflow:'hidden', boxShadow:'0 1px 3px rgba(0,0,0,0.06)' }}>
-        <div style={{ padding:'10px 18px', background:'#ecfdf5', borderBottom:'1px solid #d1fae5', display:'flex', alignItems:'center', gap:8 }}>
+      {/* 정답 입력 */}
+      <div style={{
+        background: '#fff',
+        border: '1px solid #e2e8f0',
+        borderRadius: 12,
+        overflow: 'hidden',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.06)'
+      }}>
+        <div style={{
+          padding: '10px 18px',
+          background: '#ecfdf5',
+          borderBottom: '1px solid #d1fae5',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8
+        }}>
           <CheckCircle2 size={14} color="#10b981" />
-          <span style={{ fontSize:12, fontWeight:600, color:'#059669' }}>정답</span>
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#059669' }}>정답 입력</span>
         </div>
-        <div style={{ padding:'16px 22px', fontSize:20, fontWeight:800, color:'#10b981' }}>{answer}</div>
+
+        <form onSubmit={handleAnswerSubmit} style={{ padding: '16px 22px' }}>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              value={userAnswer}
+              onChange={(e) => setUserAnswer(e.target.value)}
+              disabled={isCorrect}
+              placeholder="빈칸에 들어갈 정답을 입력하세요"
+              style={{
+                flex: 1,
+                padding: '11px 13px',
+                borderRadius: 8,
+                border: `1px solid ${isCorrect ? '#86efac' : '#cbd5e1'}`,
+                background: isCorrect ? '#f0fdf4' : '#fff',
+                color: '#1e293b',
+                fontSize: 13,
+                outline: 'none'
+              }}
+            />
+
+            <button
+              type="submit"
+              disabled={isCorrect}
+              style={{
+                padding: '0 16px',
+                borderRadius: 8,
+                border: 'none',
+                background: isCorrect ? '#86efac' : '#10b981',
+                color: '#fff',
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: isCorrect ? 'default' : 'pointer'
+              }}
+            >
+              확인
+            </button>
+          </div>
+
+          {answerMessage && (
+            <div style={{
+              marginTop: 10,
+              fontSize: 13,
+              fontWeight: 700,
+              color: isCorrect ? '#059669' : '#dc2626'
+            }}>
+              {answerMessage}
+            </div>
+          )}
+
+          {isCorrect && (
+            <div style={{
+              marginTop: 12,
+              padding: '12px 14px',
+              borderRadius: 8,
+              background: '#f0fdf4',
+              border: '1px solid #bbf7d0',
+              color: '#059669',
+              fontSize: 13,
+              lineHeight: 1.7
+            }}>
+              정답입니다! 아래에서 해설과 원본 코드를 확인할 수 있습니다.
+            </div>
+          )}
+        </form>
       </div>
 
+      {/* 힌트 토글 */}
       {hint && (
         <div style={{
           background: '#fff',
@@ -168,47 +276,71 @@ export default function NoteDetailPage() {
           overflow: 'hidden',
           boxShadow: '0 1px 3px rgba(0,0,0,0.06)'
         }}>
-          <div style={{
-            padding: '10px 18px',
-            background: '#fffbeb',
-            borderBottom: '1px solid #fde68a',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8
-          }}>
-            <span style={{ fontSize: 14 }}>🧩</span>
-            <span style={{ fontSize: 12, fontWeight: 600, color: '#d97706' }}>힌트</span>
-          </div>
+          <button
+            onClick={() => setShowHint(prev => !prev)}
+            style={{
+              width: '100%',
+              padding: '10px 18px',
+              background: '#fffbeb',
+              border: 'none',
+              borderBottom: showHint ? '1px solid #fde68a' : 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              cursor: 'pointer'
+            }}
+          >
+            <span style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              fontSize: 12,
+              fontWeight: 600,
+              color: '#d97706'
+            }}>
+              <Lightbulb size={14} />
+              힌트
+            </span>
 
-          <div style={{
-            padding: '16px 22px',
-            fontSize: 13,
-            color: '#475569',
-            lineHeight: 1.8
-          }}>
-            {hint}
-          </div>
+            <span style={{ fontSize: 12, color: '#d97706', fontWeight: 600 }}>
+              {showHint ? '닫기 ▲' : '보기 ▼'}
+            </span>
+          </button>
+
+          {showHint && (
+            <div style={{
+              padding: '16px 22px',
+              fontSize: 13,
+              color: '#475569',
+              lineHeight: 1.8
+            }}>
+              {hint}
+            </div>
+          )}
         </div>
       )}
       {/* 해설 */}
-      <div style={{ background:'#fff', border:'1px solid #e2e8f0', borderRadius:12, overflow:'hidden', boxShadow:'0 1px 3px rgba(0,0,0,0.06)' }}>
-        <div style={{ padding:'10px 18px', background:'#eff6ff', borderBottom:'1px solid #dbeafe', display:'flex', alignItems:'center', gap:8 }}>
-          <span style={{ fontSize:14 }}>💡</span>
-          <span style={{ fontSize:12, fontWeight:600, color:'#2563eb' }}>해설</span>
+      {isCorrect && (
+        <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+          <div style={{ padding: '10px 18px', background: '#eff6ff', borderBottom: '1px solid #dbeafe', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 14 }}>💡</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#2563eb' }}>해설</span>
+          </div>
+          <div style={{ padding: '20px 22px', fontSize: 13, color: '#334155', lineHeight: 1.9 }}>
+            <ReactMarkdown components={{
+              p: ({ children }) => <p style={{ marginBottom: 10 }}>{children}</p>,
+              strong: ({ children }) => <strong style={{ color: '#1e293b' }}>{children}</strong>,
+              code: ({ children }) => <code style={{ fontFamily: 'JetBrains Mono,monospace', fontSize: 12, background: '#f1f5f9', color: '#2563eb', padding: '1px 6px', borderRadius: 4 }}>{children}</code>,
+              table: ({ children }) => <div style={{ overflowX: 'auto', marginBottom: 10 }}><table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 12 }}>{children}</table></div>,
+              th: ({ children }) => <th style={{ background: '#f1f5f9', padding: '6px 12px', border: '1px solid #e2e8f0', fontWeight: 600, textAlign: 'left' }}>{children}</th>,
+              td: ({ children }) => <td style={{ padding: '6px 12px', border: '1px solid #e2e8f0', color: '#475569' }}>{children}</td>,
+            }}>{explanation}</ReactMarkdown>
+          </div>
         </div>
-        <div style={{ padding:'20px 22px', fontSize:13, color:'#334155', lineHeight:1.9 }}>
-          <ReactMarkdown components={{
-            p:     ({children})=><p style={{marginBottom:10}}>{children}</p>,
-            strong:({children})=><strong style={{color:'#1e293b'}}>{children}</strong>,
-            code:  ({children})=><code style={{fontFamily:'JetBrains Mono,monospace',fontSize:12,background:'#f1f5f9',color:'#2563eb',padding:'1px 6px',borderRadius:4}}>{children}</code>,
-            table: ({children})=><div style={{overflowX:'auto',marginBottom:10}}><table style={{borderCollapse:'collapse',width:'100%',fontSize:12}}>{children}</table></div>,
-            th:    ({children})=><th style={{background:'#f1f5f9',padding:'6px 12px',border:'1px solid #e2e8f0',fontWeight:600,textAlign:'left'}}>{children}</th>,
-            td:    ({children})=><td style={{padding:'6px 12px',border:'1px solid #e2e8f0',color:'#475569'}}>{children}</td>,
-          }}>{explanation}</ReactMarkdown>
-        </div>
-      </div>
+      )}
 
-      {note.code && (
+      {/* 원본 코드 */}
+      {isCorrect && originalCode && (
         <div style={{
           background: '#fff',
           border: '1px solid #e2e8f0',
@@ -239,7 +371,7 @@ export default function NoteDetailPage() {
             lineHeight: 1.85,
             background: '#fff'
           }}>
-            {note.code}
+            {originalCode}
           </pre>
         </div>
       )}
