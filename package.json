@@ -1,0 +1,74 @@
+{
+  "name": "neco",
+  "displayName": "Neco",
+  "description": "친절한 AI 코딩 친구, 네코",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.110.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onView:necoSidebarView"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "neco.addComment",
+        "title": "Neco"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "necoSidebar",
+          "title": "NECO",
+          "icon": "media/neco.svg"
+        }
+      ]
+    },
+    "views": {
+      "necoSidebar": [
+        {
+          "type": "webview",
+          "id": "necoSidebarView",
+          "name": "Neco"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build:all",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test",
+    "build:webview": "cd webview && npm run build",
+    "build:all": "npm run build:webview && npm run compile"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "22.x",
+    "@types/vscode": "^1.110.0",
+    "@types/ws": "^8.18.1",
+    "@vscode/test-cli": "^0.0.12",
+    "@vscode/test-electron": "^2.5.2",
+    "eslint": "^9.39.3",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.56.1"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "bcrypt": "^6.0.0",
+    "dotenv": "^17.4.1",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "tree-sitter-wasms": "^0.1.13",
+    "web-tree-sitter": "^0.22.6",
+    "ws": "^8.20.1"
+  }
+}

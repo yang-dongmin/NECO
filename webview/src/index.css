@@ -1,0 +1,20 @@
+/* VSCode 웹뷰 전역 리셋 */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+}
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #2a2d40; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #3a3d55; }
