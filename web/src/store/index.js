@@ -18,16 +18,18 @@ export const useAuthStore = create((set) => ({
     localStorage.setItem('neco_user', JSON.stringify(user))
     set({ user, token })
 
-    // ── 로그인 시 SRS 카드 + 북마크 DB에서 병합 ────────────────────────────
+    // ── 로그인 시: 이전 유저 데이터 클리어 후 DB에서 새로 로드 ──────────────
     import('../store/srsStore').then(({ useSrsStore }) => {
+      useSrsStore.getState().resetAll()   // 이전 유저 로컬 데이터 클리어
       api.get('/notes/srs-cards')
         .then(data => {
           const cards = data.cards ?? data ?? []
           useSrsStore.getState().loadFromDB(cards)
         })
-        .catch(() => { /* 실패해도 localStorage 데이터로 동작 */ })
+        .catch(() => {})
     })
     import('../store/bookmarkStore').then(({ useBookmarkStore }) => {
+      useBookmarkStore.getState().clear()  // 이전 유저 로컬 데이터 클리어
       useBookmarkStore.getState().loadFromDB()
     })
   },
@@ -35,6 +37,13 @@ export const useAuthStore = create((set) => ({
   logout: () => {
     localStorage.removeItem('token')
     localStorage.removeItem('neco_user')
+    // ── 로그아웃 시 SRS·북마크 로컬 데이터 초기화 ──────────────────────────
+    import('../store/srsStore').then(({ useSrsStore }) => {
+      useSrsStore.getState().resetAll()
+    })
+    import('../store/bookmarkStore').then(({ useBookmarkStore }) => {
+      useBookmarkStore.getState().clear()
+    })
     set({ user: null, token: null })
   },
 }))

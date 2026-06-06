@@ -25,12 +25,17 @@ export const useBookmarkStore = create((set, get) => ({
     try {
       const data = await getBookmarks()
       const dbIds = new Set((data.bookmarks ?? []).map(Number))
-      // DB 기준으로 덮어쓰기 (DB가 truth)
       saveLocal(dbIds)
       set({ ids: dbIds })
     } catch {
       /* 실패하면 localStorage 유지 */
     }
+  },
+
+  // ── 로그아웃 시 초기화 ────────────────────────────────────────────────────
+  clear() {
+    localStorage.removeItem(BM_KEY)
+    set({ ids: new Set() })
   },
 
   // ── 북마크 상태 조회 ──────────────────────────────────────────────────────

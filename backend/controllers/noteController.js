@@ -86,7 +86,8 @@ exports.getNotes = async (req, res) => {
             sql += ' JOIN tags t ON t.id = nt.tag_id'
         }
 
-        sql += ' WHERE n.user_id = ?'
+        // 내 노트 OR 공용 문제(is_public=1) 모두 포함
+        sql += ' WHERE (n.user_id = ? OR n.is_public = 1)'
         params.push(userId)
 
         if (subject && VALID_SUBJECTS.includes(subject)) {
@@ -102,12 +103,12 @@ exports.getNotes = async (req, res) => {
             params.push(tag)
         }
 
-        // 정렬
+        // 정렬: 공용 문제를 먼저, 그 다음 최신순
         const orderMap = {
-            newest: 'n.created_at DESC',
-            oldest: 'n.created_at ASC',
+            newest: 'n.is_public DESC, n.created_at DESC',
+            oldest: 'n.is_public DESC, n.created_at ASC',
         }
-        sql += ` ORDER BY ${orderMap[sort] || 'n.created_at DESC'}`
+        sql += ` ORDER BY ${orderMap[sort] || 'n.is_public DESC, n.created_at DESC'}`
 
         // 페이징
         const offset = (Number(page) - 1) * Number(limit)
@@ -122,7 +123,7 @@ exports.getNotes = async (req, res) => {
         if (tag) {
             countSql += ' JOIN note_tags nt ON nt.note_id = n.id JOIN tags t ON t.id = nt.tag_id'
         }
-        countSql += ' WHERE n.user_id = ?'
+        countSql += ' WHERE (n.user_id = ? OR n.is_public = 1)'
         if (subject) { countSql += ' AND n.subject = ?'; countParams.push(subject) }
         if (language) { countSql += ' AND n.language = ?'; countParams.push(language) }
         if (tag)     { countSql += ' AND t.name = ?';     countParams.push(tag)     }
@@ -155,13 +156,13 @@ exports.getNote = async (req, res) => {
         const noteId = Number(req.params.id)
 
         const [[row]] = await db.query(
-            'SELECT * FROM notes WHERE id = ? AND user_id = ?',
+            'SELECT * FROM notes WHERE id = ? AND (user_id = ? OR is_public = 1)',
             [noteId, userId]
         )
         if (!row) return res.status(404).json({ message: '노트를 찾을 수 없습니다.' })
 
-        const [notes] = await attachTags([toNote(row)])
-        res.json({ note: notes[0] })
+        const [note] = await attachTags([toNote(row)])
+        res.json({ note })
 
     } catch (error) {
         console.error('노트 상세 에러:', error)
@@ -220,9 +221,9 @@ exports.createNote = async (req, res) => {
 
         // 생성된 노트 반환
         const [[row]] = await db.query('SELECT * FROM notes WHERE id = ?', [noteId])
-        const [notes] = await attachTags([toNote(row)])
+        const [note] = await attachTags([toNote(row)])
 
-        res.status(201).json({ message: '노트가 저장되었습니다.', note: notes[0] })
+        res.status(201).json({ message: '노트가 저장되었습니다.', note })
 
     } catch (error) {
         console.error('노트 생성 에러:', error)
@@ -290,9 +291,9 @@ exports.updateNote = async (req, res) => {
         }
 
         const [[row]] = await db.query('SELECT * FROM notes WHERE id = ?', [noteId])
-        const [notes] = await attachTags([toNote(row)])
+        const [note] = await attachTags([toNote(row)])
 
-        res.json({ message: '노트가 수정되었습니다.', note: notes[0] })
+        res.json({ message: '노트가 수정되었습니다.', note })
 
     } catch (error) {
         console.error('노트 수정 에러:', error)
