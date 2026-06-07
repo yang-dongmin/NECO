@@ -2,45 +2,10 @@
 // 실제 에디터 로직과 연결해주는 중간 서비스이다.
 
 import * as vscode from 'vscode';
-import { generateComment, formatCommentText } from './commentGenerator';
+import { formatCommentText } from './commentGenerator';
 import { generateAiComment } from './aiCommentService';
 import { getActiveEditor, getSelectedText } from '../utils/editorUtils';
 import { ParsedCode } from './parser/types';
-
-/*
-  기본 주석 미리보기 생성
-  - 선택한 코드를 읽고
-  - 규칙 기반 주석 문자열을 만들어서
-  - 웹뷰 미리보기에 보여줄 결과를 반환한다.
-
-  현재 구조에서는 AI 주석을 주로 사용하지만,
-  기본 주석 기능을 남겨두고 싶을 때 사용할 수 있다.
-*/
-export function generateCommentPreview(): { success: boolean; comment?: string; message?: string } {
-  // 현재 활성 에디터를 가져온다.
-  const editor = getActiveEditor();
-
-  // 열린 파일이 없으면 중단
-  if (!editor) {
-    return { success: false, message: '열린 파일이 없습니다!' };
-  }
-
-  // 사용자가 선택한 코드 영역을 가져온다.
-  const selectedText = getSelectedText(editor);
-
-  // 선택된 코드가 없으면 중단
-  if (!selectedText.trim()) {
-    return { success: false, message: '코드를 선택해주세요!' };
-  }
-
-  // 현재 파일의 언어 id
-  const languageId = editor.document.languageId;
-
-  // 규칙 기반 주석 문자열 생성
-  const comment = generateComment(selectedText, languageId);
-
-  return { success: true, comment };
-}
 
 /*
   AI 주석 미리보기 생성

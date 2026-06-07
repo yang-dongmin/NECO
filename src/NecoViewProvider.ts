@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import {
-  generateCommentPreview,
   generateAiCommentPreview,
   insertGeneratedComment
 } from './services/webviewCommentService';
@@ -70,19 +69,6 @@ export class NecoViewProvider implements vscode.WebviewViewProvider {
 
     if (message.type === 'showMessage') {
       vscode.window.showInformationMessage(message.text);
-      return;
-    }
-
-    if (message.type === 'generateCommentPreview') {
-      const result = generateCommentPreview();
-
-      if (!result.success) {
-        vscode.window.showErrorMessage(result.message ?? '주석 생성에 실패했어요.');
-        this.sendMessage('setCommentPreview', '');
-        return;
-      }
-
-      this.sendMessage('setCommentPreview', result.comment ?? '');
       return;
     }
 

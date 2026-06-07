@@ -83,16 +83,6 @@ class NecoViewProvider {
             vscode.window.showInformationMessage(message.text);
             return;
         }
-        if (message.type === 'generateCommentPreview') {
-            const result = (0, webviewCommentService_1.generateCommentPreview)();
-            if (!result.success) {
-                vscode.window.showErrorMessage(result.message ?? '주석 생성에 실패했어요.');
-                this.sendMessage('setCommentPreview', '');
-                return;
-            }
-            this.sendMessage('setCommentPreview', result.comment ?? '');
-            return;
-        }
         if (message.type === 'generateAiCommentPreview') {
             const parsedCode = message.parsedCode ?? null;
             const result = await (0, webviewCommentService_1.generateAiCommentPreview)(parsedCode);

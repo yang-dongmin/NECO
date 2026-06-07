@@ -35,41 +35,12 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.generateCommentPreview = generateCommentPreview;
 exports.generateAiCommentPreview = generateAiCommentPreview;
 exports.insertGeneratedComment = insertGeneratedComment;
 const vscode = __importStar(require("vscode"));
 const commentGenerator_1 = require("./commentGenerator");
 const aiCommentService_1 = require("./aiCommentService");
 const editorUtils_1 = require("../utils/editorUtils");
-/*
-  기본 주석 미리보기 생성
-  - 선택한 코드를 읽고
-  - 규칙 기반 주석 문자열을 만들어서
-  - 웹뷰 미리보기에 보여줄 결과를 반환한다.
-
-  현재 구조에서는 AI 주석을 주로 사용하지만,
-  기본 주석 기능을 남겨두고 싶을 때 사용할 수 있다.
-*/
-function generateCommentPreview() {
-    // 현재 활성 에디터를 가져온다.
-    const editor = (0, editorUtils_1.getActiveEditor)();
-    // 열린 파일이 없으면 중단
-    if (!editor) {
-        return { success: false, message: '열린 파일이 없습니다!' };
-    }
-    // 사용자가 선택한 코드 영역을 가져온다.
-    const selectedText = (0, editorUtils_1.getSelectedText)(editor);
-    // 선택된 코드가 없으면 중단
-    if (!selectedText.trim()) {
-        return { success: false, message: '코드를 선택해주세요!' };
-    }
-    // 현재 파일의 언어 id
-    const languageId = editor.document.languageId;
-    // 규칙 기반 주석 문자열 생성
-    const comment = (0, commentGenerator_1.generateComment)(selectedText, languageId);
-    return { success: true, comment };
-}
 /*
   AI 주석 미리보기 생성
   - 선택한 코드를 Gemini로 보내 설명 문장을 만든다.
