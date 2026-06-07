@@ -100,6 +100,14 @@ export function startLocalServer() {
     }
   );
 
+  // VSCode 연결 상태 확인
+  app.get(
+    '/api/status',
+    (_req: any, res: any) => {
+      res.json({ connected: true });
+    }
+  );
+
   // 전체 노트
   app.get(
     '/api/notes',

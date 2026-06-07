@@ -18,6 +18,13 @@ export const useAuthStore = create((set) => ({
     localStorage.setItem('neco_user', JSON.stringify(user))
     set({ user, token })
 
+    // ── VSCode 확장에 토큰 전달 (연결돼 있을 때만, 실패해도 무시) ──────────
+    fetch('http://localhost:3939/api/auth/vscode-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, nickname: user.name ?? user.nickname }),
+    }).catch(() => {})
+
     // ── 로그인 시: 이전 유저 데이터 클리어 후 DB에서 새로 로드 ──────────────
     import('../store/srsStore').then(({ useSrsStore }) => {
       useSrsStore.getState().resetAll()   // 이전 유저 로컬 데이터 클리어
