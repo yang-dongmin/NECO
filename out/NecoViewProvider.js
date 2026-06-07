@@ -165,7 +165,7 @@ class NecoViewProvider {
                     vscode.window.showWarningMessage('로그인 토큰이 없어 DB에는 저장하지 못했어요. 먼저 로그인해주세요.');
                 }
                 else {
-                    const response = await fetch('http://localhost:5001/api/notes', {
+                    const response = await fetch('http://localhost:5001/api/code-notes', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',

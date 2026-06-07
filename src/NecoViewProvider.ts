@@ -205,7 +205,7 @@ export class NecoViewProvider implements vscode.WebviewViewProvider {
           );
         } else {
           const response = await fetch(
-            'http://localhost:5001/api/notes',
+            'http://localhost:5001/api/code-notes',
             {
               method: 'POST',
               headers: {

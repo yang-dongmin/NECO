@@ -10,6 +10,7 @@ import StatsPage         from './pages/StatsPage'
 import ReviewSessionPage from './pages/ReviewSessionPage'
 import SrsOverviewPage   from './pages/SrsOverviewPage'
 import PublicNoteListPage from './pages/PublicNoteListPage'
+import MyCodeNotesPage   from './pages/MyCodeNotesPage'
 
 function PrivateRoute({ children }) {
   const token = useAuthStore((s) => s.token)
@@ -28,6 +29,7 @@ export default function App() {
                 <Route index                  element={<DashboardPage />} />
                 <Route path="notes"           element={<NoteListPage />} />
                 <Route path="public-notes"    element={<PublicNoteListPage />} />
+                <Route path="code-notes"      element={<MyCodeNotesPage />} />
                 <Route path="notes/add"       element={<AddNotePage />} />
                 <Route path="notes/:id"       element={<NoteDetailPage />} />
                 <Route path="notes/:id/edit"  element={<AddNotePage />} />

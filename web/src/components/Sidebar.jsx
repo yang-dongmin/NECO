@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import { BookOpen, LayoutDashboard, RotateCcw, BarChart2, Plus, Star, Globe2 } from 'lucide-react'
+import { BookOpen, LayoutDashboard, RotateCcw, BarChart2, Plus, Star, Globe2, Code2 } from 'lucide-react'
 import { useAuthStore, useNoteStore } from '../store'
 import { useSrsStore } from '../store/srsStore'
 import { SUBJECTS } from '../api/mock'
@@ -10,6 +10,7 @@ const NAV = [
   { to:'/',             icon:LayoutDashboard, label:'대시보드'      },
   { to:'/notes',        icon:BookOpen,        label:'문제 목록'     },
   { to:'/public-notes', icon:Globe2,          label:'공개 문제'     },
+  { to:'/code-notes',   icon:Code2,           label:'내 코드 노트'  },
   { to:'/srs',          icon:RotateCcw,       label:'복습 스케줄러', srs:true },
   { to:'/stats',        icon:BarChart2,        label:'통계'          },
 ]
