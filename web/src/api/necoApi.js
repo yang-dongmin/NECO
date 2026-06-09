@@ -57,6 +57,16 @@ export async function fetchNoteById(id) {
   }
 }
 
+// ── 공개 코드 노트 좋아요 토글 ───────────────────────────────────────────────
+export async function toggleCodeNoteLike(id) {
+  const res = await fetch(`${BASE}/code-notes/${id}/like`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+  })
+  if (!res.ok) throw new Error('좋아요 실패')
+  return await res.json()   // { liked, likeCount }
+}
+
 // ── WebSocket: 확장에서 저장 시 실시간 수신 ──────────────────────────────────
 let ws = null
 let wsListeners = []

@@ -21,6 +21,7 @@ const LANGS = [
 const SORT_OPTIONS = [
   { value: 'newest', label: '최신순'   },
   { value: 'oldest', label: '오래된순' },
+  { value: 'popular', label: '인기순'  },
 ]
 
 export default function PublicNoteListPage() {
@@ -62,11 +63,11 @@ export default function PublicNoteListPage() {
     }
 
     // 정렬
-    result.sort((a, b) =>
-      sort === 'oldest'
-        ? new Date(a.createdAt) - new Date(b.createdAt)
-        : new Date(b.createdAt) - new Date(a.createdAt)
-    )
+    result.sort((a, b) => {
+      if (sort === 'popular') return (Number(b.likeCount) || 0) - (Number(a.likeCount) || 0)
+      if (sort === 'oldest')  return new Date(a.createdAt) - new Date(b.createdAt)
+      return new Date(b.createdAt) - new Date(a.createdAt)
+    })
     return result
   }, [notes, language, keyword, sort])
 

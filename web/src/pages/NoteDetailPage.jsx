@@ -1,13 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
-import { ArrowLeft, CheckCircle2, Clock, BookOpen, Edit2, Trash2, Star, Share2, Copy, Eye, Send } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, Clock, BookOpen, Edit2, Trash2, Star, Share2, Copy, Eye, Send, MoreHorizontal } from 'lucide-react'
 import { getNote, deleteNote as apiDeleteNote } from '../api/client'
 import { useBookmarkStore } from '../store/bookmarkStore'
 import { useNoteStore, useAuthStore } from '../store'
 import { useSrsStore } from '../store/srsStore'
 import { SubjectBadge, RoundBadge, TagBadge } from '../components/ui'
 import { useToast } from '../components/Toast'
+import { PageSkeleton } from '../components/Skeleton'
 
 // 정답 비교용 정규화 (공백·대소문자·세미콜론 무시)
 function normalize(s) {
@@ -37,6 +38,8 @@ export default function NoteDetailPage() {
   const [bookmarked,      setBookmarked]      = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deleting,        setDeleting]        = useState(false)
+  const [showMoreMenu,    setShowMoreMenu]    = useState(false)
+  const moreMenuRef = useRef(null)
 
   // ── 답안 작성 / 비교 단계 ─────────────────────────────────────────────────
   // phase: 'writing' | 'comparing' | 'done'
@@ -63,11 +66,7 @@ export default function NoteDetailPage() {
       .finally(() => setLoading(false))
   }, [id])
 
-  if (loading) return (
-    <div style={{ display:'flex', justifyContent:'center', alignItems:'center', minHeight:200, color:'#94a3b8', fontSize:13 }}>
-      불러오는 중...
-    </div>
-  )
+  if (loading) return <PageSkeleton />
   if (!note) return null
 
   const isMono   = (note.language || 'theory') !== 'theory'
@@ -169,14 +168,37 @@ export default function NoteDetailPage() {
               공용 문제
             </span>
           ) : (
-            <>
-              <button onClick={()=>navigate(`/notes/${note.id}/edit`)} style={{ display:'flex', alignItems:'center', gap:5, padding:'6px 12px', borderRadius:7, background:'#fff', border:'1px solid #e2e8f0', color:'#64748b', cursor:'pointer', fontSize:12 }}>
-                <Edit2 size={13} /> 편집
+            <div ref={moreMenuRef} style={{ position:'relative' }}>
+              <button
+                onClick={() => setShowMoreMenu(p => !p)}
+                style={{ display:'flex', alignItems:'center', padding:'6px 10px', borderRadius:7, background: showMoreMenu ? '#f1f5f9' : '#fff', border:'1px solid #e2e8f0', color:'#64748b', cursor:'pointer' }}
+              >
+                <MoreHorizontal size={15} />
               </button>
-              <button onClick={()=>setShowDeleteModal(true)} style={{ display:'flex', alignItems:'center', gap:5, padding:'6px 12px', borderRadius:7, background:'#fef2f2', border:'1px solid #fecaca', color:'#dc2626', cursor:'pointer', fontSize:12, fontWeight:600 }}>
-                <Trash2 size={13} /> 삭제
-              </button>
-            </>
+              {showMoreMenu && (
+                <>
+                  <div style={{ position:'fixed', inset:0, zIndex:99 }} onClick={() => setShowMoreMenu(false)} />
+                  <div style={{ position:'absolute', right:0, top:'calc(100% + 6px)', zIndex:100, background:'#fff', border:'1px solid #e2e8f0', borderRadius:10, boxShadow:'0 8px 24px rgba(0,0,0,0.10)', overflow:'hidden', minWidth:130 }}>
+                    <button
+                      onClick={() => { setShowMoreMenu(false); navigate(`/notes/${note.id}/edit`) }}
+                      style={{ width:'100%', display:'flex', alignItems:'center', gap:8, padding:'10px 14px', background:'none', border:'none', cursor:'pointer', fontSize:13, color:'#334155', textAlign:'left' }}
+                      onMouseEnter={e => e.currentTarget.style.background='#f8fafc'}
+                      onMouseLeave={e => e.currentTarget.style.background='none'}
+                    >
+                      <Edit2 size={13} /> 편집
+                    </button>
+                    <button
+                      onClick={() => { setShowMoreMenu(false); setShowDeleteModal(true) }}
+                      style={{ width:'100%', display:'flex', alignItems:'center', gap:8, padding:'10px 14px', background:'none', border:'none', cursor:'pointer', fontSize:13, color:'#dc2626', textAlign:'left' }}
+                      onMouseEnter={e => e.currentTarget.style.background='#fef2f2'}
+                      onMouseLeave={e => e.currentTarget.style.background='none'}
+                    >
+                      <Trash2 size={13} /> 삭제
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           )}
           <div style={{ display:'flex', alignItems:'center', gap:4, fontSize:11, color:'#94a3b8' }}>
             <Clock size={12} />

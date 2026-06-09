@@ -108,12 +108,17 @@ router.get("/public", auth, async (req, res) => {
                 cn.quiz,
                 cn.created_at AS createdAt,
                 u.id AS authorId,
-                u.nickname AS authorNickname
+                u.nickname AS authorNickname,
+                COUNT(DISTINCT l.user_id) AS likeCount,
+                MAX(CASE WHEN l.user_id = ? THEN 1 ELSE 0 END) AS likedByMe
             FROM code_notes cn
             JOIN users u ON cn.user_id = u.id
+            LEFT JOIN code_note_likes l ON l.code_note_id = cn.id
             WHERE cn.is_public = 1
+            GROUP BY cn.id
             ORDER BY cn.created_at DESC
-            `
+            `,
+            [req.user.id]
         );
 
         res.json(rows);
@@ -174,6 +179,40 @@ router.get("/:id", auth, async (req, res) => {
     }
 });
 
+router.patch("/:id", auth, async (req, res) => {
+    try {
+        const noteId = req.params.id;
+        const { comment, isPublic } = req.body;
+
+        if (comment === undefined && isPublic === undefined) {
+            return res.status(400).json({ message: "수정할 항목이 없습니다." });
+        }
+
+        // 본인 노트인지 확인
+        const [[note]] = await db.query(
+            "SELECT id FROM code_notes WHERE id = ? AND user_id = ?",
+            [noteId, req.user.id]
+        );
+        if (!note) return res.status(404).json({ message: "노트를 찾을 수 없습니다." });
+
+        const fields = [];
+        const values = [];
+        if (comment !== undefined)  { fields.push("comment = ?");   values.push(comment); }
+        if (isPublic !== undefined) { fields.push("is_public = ?"); values.push(isPublic ? 1 : 0); }
+        values.push(noteId, req.user.id);
+
+        await db.query(
+            `UPDATE code_notes SET ${fields.join(", ")} WHERE id = ? AND user_id = ?`,
+            values
+        );
+
+        res.json({ message: "수정 성공" });
+    } catch (error) {
+        console.error("주석 수정 에러:", error);
+        res.status(500).json({ message: "서버 오류" });
+    }
+});
+
 router.delete("/:id", auth, async (req, res) => {
     try {
         const noteId = req.params.id;
@@ -206,6 +245,51 @@ router.delete("/:id", auth, async (req, res) => {
         res.status(500).json({
             message: "서버 오류"
         });
+    }
+});
+
+// POST /code-notes/:id/like — 좋아요 토글
+router.post("/:id/like", auth, async (req, res) => {
+    try {
+        const userId     = req.user.id;
+        const codeNoteId = Number(req.params.id);
+
+        // 공개 노트인지 확인
+        const [[note]] = await db.query(
+            "SELECT id FROM code_notes WHERE id = ? AND is_public = 1",
+            [codeNoteId]
+        );
+        if (!note) return res.status(404).json({ message: "노트를 찾을 수 없습니다." });
+
+        const [[existing]] = await db.query(
+            "SELECT 1 FROM code_note_likes WHERE user_id = ? AND code_note_id = ?",
+            [userId, codeNoteId]
+        );
+
+        if (existing) {
+            await db.query(
+                "DELETE FROM code_note_likes WHERE user_id = ? AND code_note_id = ?",
+                [userId, codeNoteId]
+            );
+            const [[{ count }]] = await db.query(
+                "SELECT COUNT(*) AS count FROM code_note_likes WHERE code_note_id = ?",
+                [codeNoteId]
+            );
+            return res.json({ liked: false, likeCount: count });
+        } else {
+            await db.query(
+                "INSERT INTO code_note_likes (user_id, code_note_id) VALUES (?, ?)",
+                [userId, codeNoteId]
+            );
+            const [[{ count }]] = await db.query(
+                "SELECT COUNT(*) AS count FROM code_note_likes WHERE code_note_id = ?",
+                [codeNoteId]
+            );
+            return res.json({ liked: true, likeCount: count });
+        }
+    } catch (error) {
+        console.error("좋아요 토글 에러:", error);
+        res.status(500).json({ message: "서버 오류" });
     }
 });
 

@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Clock, User, Code2 } from 'lucide-react'
+import { Clock, User, Code2, Heart } from 'lucide-react'
+import { toggleCodeNoteLike } from '../api/necoApi'
 
 // 언어 ID → 표시 이름
 const LANG_MAP = {
@@ -30,14 +31,15 @@ const LANG_COLOR = {
 }
 
 export default function PublicNoteCard({ note, onClick }) {
-  const [hovered, setHovered] = useState(false)
+  const [hovered,   setHovered]   = useState(false)
+  const [liked,     setLiked]     = useState(Boolean(note.likedByMe))
+  const [likeCount, setLikeCount] = useState(Number(note.likeCount) || 0)
+  const [liking,    setLiking]    = useState(false)
 
-  // code_notes 구조에서 데이터 추출
-  const lang     = note.languageId || note.language || ''
+  const lang      = note.languageId || note.language || ''
   const langLabel = LANG_MAP[lang] ?? lang
   const langStyle = LANG_COLOR[lang] ?? { bg: '#f1f5f9', color: '#475569' }
 
-  // quiz가 JSON 문자열일 수도 있음
   const quiz = (() => {
     try {
       return typeof note.quiz === 'string' ? JSON.parse(note.quiz) : note.quiz
@@ -45,6 +47,27 @@ export default function PublicNoteCard({ note, onClick }) {
   })()
 
   const codePreview = (quiz?.blankedCode || note.code || '').split('\n').slice(0, 4).join('\n')
+
+  const handleLike = async (e) => {
+    e.stopPropagation()
+    if (liking) return
+    setLiking(true)
+    // 낙관적 업데이트
+    const nextLiked = !liked
+    setLiked(nextLiked)
+    setLikeCount(c => c + (nextLiked ? 1 : -1))
+    try {
+      const data = await toggleCodeNoteLike(note.id)
+      setLiked(data.liked)
+      setLikeCount(data.likeCount)
+    } catch {
+      // 실패 시 롤백
+      setLiked(liked)
+      setLikeCount(likeCount)
+    } finally {
+      setLiking(false)
+    }
+  }
 
   return (
     <div
@@ -100,8 +123,8 @@ export default function PublicNoteCard({ note, onClick }) {
           {quiz && (
             <span style={{
               fontSize: 9, fontWeight: 700, padding: '2px 8px',
-              borderRadius: 99, background: '#f0fdf4',
-              color: '#16a34a', border: '1px solid #bbf7d0',
+              borderRadius: 99, background: '#fffbeb',
+              color: '#d97706', border: '1px solid #fde68a',
               marginLeft: 'auto',
             }}>
               빈칸 퀴즈
@@ -143,9 +166,30 @@ export default function PublicNoteCard({ note, onClick }) {
               {note.authorNickname}
             </div>
           )}
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#94a3b8' }}>
-            <Clock size={10} />
-            {new Date(note.createdAt).toLocaleDateString('ko-KR')}
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+            {/* 좋아요 버튼 */}
+            <button
+              onClick={handleLike}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 4,
+                background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                fontSize: 11, color: liked ? '#ef4444' : '#94a3b8',
+                transition: 'color 0.15s',
+              }}
+            >
+              <Heart
+                size={13}
+                fill={liked ? '#ef4444' : 'none'}
+                color={liked ? '#ef4444' : '#94a3b8'}
+                style={{ transition: 'all 0.15s' }}
+              />
+              {likeCount > 0 && likeCount}
+            </button>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#94a3b8' }}>
+              <Clock size={10} />
+              {new Date(note.createdAt).toLocaleDateString('ko-KR')}
+            </div>
           </div>
         </div>
       </div>

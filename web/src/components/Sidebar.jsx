@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { BookOpen, LayoutDashboard, RotateCcw, BarChart2, Plus, Star, Globe2, Code2 } from 'lucide-react'
 import { useAuthStore, useNoteStore } from '../store'
@@ -20,7 +20,11 @@ export default function Sidebar() {
   const { setFilter, filters, notes } = useNoteStore()
   const { getSummary }         = useSrsStore()
   const navigate               = useNavigate()
+  const location               = useLocation()
   const due                    = getSummary(notes).due
+
+  // 즐겨찾기 active: /notes 페이지이면서 bookmark 필터가 활성화된 상태
+  const isBookmarkActive = location.pathname === '/notes' && filters.bookmark === 'true'
 
   // ★ VSCode 연결 상태 (5초마다 체크)
   const [vsConnected, setVsConnected] = useState(false)
@@ -82,11 +86,18 @@ export default function Sidebar() {
 
         {/* 즐겨찾기 */}
         <div onClick={handleBookmark}
-          style={{ display:'flex', alignItems:'center', gap:10, padding:'9px 10px', borderRadius:8, marginBottom:2, cursor:'pointer', fontSize:13, color:'#475569', transition:'all 0.12s' }}
-          onMouseEnter={e=>e.currentTarget.style.background='#f8fafc'}
-          onMouseLeave={e=>e.currentTarget.style.background='transparent'}
+          style={{
+            display:'flex', alignItems:'center', gap:10, padding:'9px 10px',
+            borderRadius:8, marginBottom:2, cursor:'pointer', fontSize:13,
+            transition:'all 0.12s',
+            background: isBookmarkActive ? '#eff6ff' : 'transparent',
+            color:      isBookmarkActive ? '#2563eb' : '#475569',
+            fontWeight: isBookmarkActive ? 600 : 400,
+          }}
+          onMouseEnter={e=>{ if(!isBookmarkActive) e.currentTarget.style.background='#f8fafc' }}
+          onMouseLeave={e=>{ if(!isBookmarkActive) e.currentTarget.style.background='transparent' }}
         >
-          <Star size={16} strokeWidth={1.8} />
+          <Star size={16} strokeWidth={isBookmarkActive ? 2.2 : 1.8} fill={isBookmarkActive ? '#2563eb' : 'none'} color={isBookmarkActive ? '#2563eb' : '#475569'} />
           <span>즐겨찾기</span>
         </div>
 
@@ -170,11 +181,7 @@ export default function Sidebar() {
 
         {/* ★ 로그인/비로그인 상태 분기 */}
         {user ? (
-          <div onClick={handleLogout} title="클릭하여 로그아웃"
-            style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 10px', borderRadius:8, cursor:'pointer', transition:'background 0.12s' }}
-            onMouseEnter={e=>e.currentTarget.style.background='#fef2f2'}
-            onMouseLeave={e=>e.currentTarget.style.background='transparent'}
-          >
+          <div style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 10px', borderRadius:8, transition:'background 0.12s' }}>
             <div style={{ width:30, height:30, borderRadius:'50%', flexShrink:0, background:'linear-gradient(135deg,#2563eb,#7c3aed)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:700, color:'#fff' }}>
               {(user.name ?? user.nickname ?? 'U').slice(0,1).toUpperCase()}
             </div>
@@ -182,7 +189,14 @@ export default function Sidebar() {
               <div style={{ fontSize:12, fontWeight:600, color:'#1e293b' }}>{user.name ?? user.nickname}</div>
               <div style={{ fontSize:10, color:'#94a3b8', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{user.email}</div>
             </div>
-            <div style={{ fontSize:10, color:'#ef4444', flexShrink:0 }}>로그아웃</div>
+            <button
+              onClick={handleLogout}
+              style={{ fontSize:10, color:'#ef4444', flexShrink:0, background:'none', border:'none', cursor:'pointer', padding:'3px 7px', borderRadius:5, transition:'background 0.12s' }}
+              onMouseEnter={e=>e.currentTarget.style.background='#fef2f2'}
+              onMouseLeave={e=>e.currentTarget.style.background='transparent'}
+            >
+              로그아웃
+            </button>
           </div>
         ) : (
           <div onClick={()=>navigate('/login')}

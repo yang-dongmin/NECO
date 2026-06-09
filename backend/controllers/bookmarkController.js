@@ -16,7 +16,8 @@ exports.addBookmark = async (req, res, next) => {
     try {
         const userId = req.user.id
         const noteId = Number(req.params.id)
-        const [[note]] = await db.query('SELECT id FROM notes WHERE id = ? AND user_id = ?', [noteId, userId])
+        // 본인 노트이거나 공개 노트이면 북마크 가능
+        const [[note]] = await db.query('SELECT id FROM notes WHERE id = ? AND (user_id = ? OR is_public = 1)', [noteId, userId])
         if (!note) return res.status(404).json({ message: '노트를 찾을 수 없습니다.' })
         await db.query('INSERT IGNORE INTO bookmarks (user_id, note_id) VALUES (?, ?)', [userId, noteId])
         res.json({ bookmarked: true })

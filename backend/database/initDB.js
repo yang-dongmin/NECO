@@ -139,10 +139,30 @@ async function phase3Migration() {
     }
 }
 
+// ── Phase 4 마이그레이션 (좋아요 기능) ────────────────────────────────────────
+async function phase4Migration() {
+    try {
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS code_note_likes (
+                user_id      INT NOT NULL,
+                code_note_id INT NOT NULL,
+                created_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (user_id, code_note_id),
+                FOREIGN KEY (user_id)      REFERENCES users(id)      ON DELETE CASCADE,
+                FOREIGN KEY (code_note_id) REFERENCES code_notes(id) ON DELETE CASCADE
+            )
+        `);
+        console.log('✓ code_note_likes 테이블 준비 완료');
+    } catch (err) {
+        console.error('Phase 4 마이그레이션 실패:', err);
+    }
+}
+
 // 🔥 핵심 수정 부분
 async function bootstrap() {
     await initDB();
     await phase3Migration();
+    await phase4Migration();
 }
 
 bootstrap();

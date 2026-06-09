@@ -201,7 +201,7 @@ export default function NoteListPage() {
           action={
             <div style={{ display:'flex', gap:8 }}>
               {hasFilter && (
-                <button onClick={()=>{ setFilter('tag',''); setFilter('lang',''); setFilter('subject',''); setFilter('q',''); setFilter('bookmark','') }}
+                <button onClick={()=>{ setFilter('tag',''); setFilter('lang',''); setFilter('subject',''); setFilter('q',''); setFilter('bookmark','') }} 
                   style={{ padding:'8px 16px', borderRadius:8, background:'#f1f5f9', border:'none', color:'#475569', cursor:'pointer', fontSize:13 }}>
                   필터 초기화
                 </button>

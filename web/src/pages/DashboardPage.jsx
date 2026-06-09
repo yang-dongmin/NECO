@@ -50,7 +50,7 @@ export default function DashboardPage() {
   // 실제 API 값 or fallback
   const totalNotes  = apiStats?.totalNotes  ?? allNotes.length
   const totalReview = apiStats?.totalReview ?? 0
-  const streak      = apiStats?.streak      ?? 0   // Phase 2에서 백엔드 쿼리 추가 예정
+  const streak      = apiStats?.streak      ?? 0
 
   if (loading) return <PageSkeleton />
 
@@ -92,12 +92,12 @@ export default function DashboardPage() {
       )}
 
       {/* 통계 카드 4개 — 실제 API 데이터 */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 14 }}>
         {[
           { icon: '📚', label: '전체 문제',      value: totalNotes,          sub: '내 오답노트',                  color: '#2563eb', bg: '#eff6ff' },
           { icon: '✅', label: '총 복습 횟수',   value: totalReview,         sub: '꾸준히 하고 있어요',            color: '#10b981', bg: '#ecfdf5' },
           { icon: '🔥', label: '오늘 복습 대상', value: srsSummary.due,      sub: `전체 ${srsSummary.total}문제`, color: '#f59e0b', bg: '#fffbeb' },
-          { icon: '⚡', label: '연속 학습',      value: streak > 0 ? `${streak}일` : '—', sub: streak > 0 ? '계속 유지해요!' : 'Phase 2 업데이트 예정', color: '#7c3aed', bg: '#f5f3ff' },
+          { icon: '⚡', label: '연속 학습',      value: streak > 0 ? `${streak}일` : '—', sub: streak > 0 ? '계속 유지해요!' : '아직 기록 없음', color: '#7c3aed', bg: '#f5f3ff' },
         ].map(({ icon, label, value, sub, color, bg }) => (
           <div key={label} style={{
             background: '#fff', border: '1px solid #f1f5f9', borderRadius: 12,
