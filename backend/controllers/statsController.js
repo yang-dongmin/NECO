@@ -37,29 +37,11 @@ exports.getStats = async (req, res, next) => {
              FROM srs_cards WHERE user_id = ?`,
             [userId]
         )
-        const [reviewDays] = await db.query(
-            `SELECT DISTINCT DATE(last_reviewed_at) as day FROM srs_cards
-             WHERE user_id = ? AND last_reviewed_at IS NOT NULL ORDER BY day DESC LIMIT 365`,
+        const [[streakRow]] = await db.query(
+            'SELECT current_streak FROM user_streaks WHERE user_id = ?',
             [userId]
         )
-
-        let streak = 0
-        if (reviewDays.length > 0) {
-            const today = new Date()
-            today.setHours(0, 0, 0, 0)
-            const firstDay = new Date(reviewDays[0].day)
-            firstDay.setHours(0, 0, 0, 0)
-            if (Math.round((today - firstDay) / 86400000) <= 1) {
-                streak = 1
-                for (let i = 1; i < reviewDays.length; i++) {
-                    const prev = new Date(reviewDays[i - 1].day)
-                    const curr = new Date(reviewDays[i].day)
-                    prev.setHours(0, 0, 0, 0); curr.setHours(0, 0, 0, 0)
-                    if (Math.round((prev - curr) / 86400000) === 1) streak++
-                    else break
-                }
-            }
-        }
+        const streak = streakRow?.current_streak ?? 0
 
         res.json({
             totalNotes,

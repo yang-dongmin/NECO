@@ -85,7 +85,7 @@ exports.login = async (req, res) => {
 
         const token = jwt.sign(
             { id: user.id, email: user.email, nickname: user.nickname },
-            process.env.JWT_SECRET || 'neco_secret_key',
+            process.env.JWT_SECRET,
             { expiresIn: '7d' }
         )
 

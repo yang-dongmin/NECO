@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowUpDown } from 'lucide-react'
-import { fetchPublicNotes } from '../api/necoApi'
+import { fetchPublicCodeNotes } from '../api/client'
+import { subscribeToNotes } from '../api/necoApi'
 import PublicNoteCard from '../components/PublicNoteCard'
 import { EmptyState } from '../components/ui'
 
@@ -33,12 +34,16 @@ export default function PublicNoteListPage() {
   const [showSort, setShowSort] = useState(false)
 
   useEffect(() => {
-    async function load() {
-      const data = await fetchPublicNotes()
-      setNotes(data)
-      setLoading(false)
-    }
-    load()
+    fetchPublicCodeNotes()
+      .then(data => setNotes(Array.isArray(data) ? data : []))
+      .catch(() => setNotes([]))
+      .finally(() => setLoading(false))
+
+    // VSCode에서 공개 노트 저장 시 실시간 반영
+    const unsubscribe = subscribeToNotes((newNote) => {
+      if (newNote.isPublic) setNotes(prev => [newNote, ...prev])
+    })
+    return unsubscribe
   }, [])
 
   const displayed = useMemo(() => {

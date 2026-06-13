@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Search, Command } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { useNoteStore } from '../store'
 import { getDday } from '../api/mock'
 

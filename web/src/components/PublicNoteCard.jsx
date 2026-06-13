@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Clock, User, Code2, Heart } from 'lucide-react'
-import { toggleCodeNoteLike } from '../api/necoApi'
+import { toggleCodeNoteLike } from '../api/client'
 
 // 언어 ID → 표시 이름
 const LANG_MAP = {

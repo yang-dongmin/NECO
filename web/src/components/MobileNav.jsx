@@ -1,13 +1,13 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, BookOpen, RotateCcw, BarChart2, Plus } from 'lucide-react'
+import { LayoutDashboard, BookOpen, CalendarCheck, BarChart2, Plus } from 'lucide-react'
 import { useSrsStore } from '../store/srsStore'
 import { useNoteStore } from '../store'
 
 const NAV_ITEMS = [
-  { to: '/',      icon: LayoutDashboard, label: '홈'   },
-  { to: '/notes', icon: BookOpen,        label: '문제' },
-  { to: '/srs',   icon: RotateCcw,       label: '복습', srs: true },
-  { to: '/stats', icon: BarChart2,        label: '통계' },
+  { to: '/',                 icon: LayoutDashboard, label: '홈'   },
+  { to: '/notes',            icon: BookOpen,        label: '문제' },
+  { to: '/review-dashboard', icon: CalendarCheck,   label: '복습', srs: true },
+  { to: '/stats',            icon: BarChart2,       label: '통계' },
 ]
 
 export default function MobileNav() {

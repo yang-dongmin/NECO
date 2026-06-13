@@ -1,4 +1,4 @@
-const { db, VALID_SUBJECTS, VALID_LANGUAGES, upsertTags, attachTags, toNote } = require('./helpers')
+const { db, VALID_SUBJECTS, VALID_LANGUAGES, upsertTags, attachTags, toNote, updateStreak } = require('./helpers')
 
 // GET /api/notes
 exports.getNotes = async (req, res, next) => {
@@ -217,7 +217,8 @@ exports.reviewNote = async (req, res, next) => {
             )
         }
 
-        res.json({ message: '복습 완료가 기록되었습니다.' })
+        const streak = await updateStreak(userId)
+        res.json({ message: 'review saved', streak })
     } catch (error) {
         next(error)
     }

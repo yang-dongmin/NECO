@@ -10,7 +10,8 @@ import StatsPage         from './pages/StatsPage'
 import ReviewSessionPage from './pages/ReviewSessionPage'
 import SrsOverviewPage   from './pages/SrsOverviewPage'
 import PublicNoteListPage from './pages/PublicNoteListPage'
-import MyCodeNotesPage   from './pages/MyCodeNotesPage'
+import MyCodeNotesPage        from './pages/MyCodeNotesPage'
+import ReviewDashboardPage   from './pages/ReviewDashboardPage'
 
 function PrivateRoute({ children }) {
   const token = useAuthStore((s) => s.token)
@@ -36,6 +37,7 @@ export default function App() {
                 <Route path="stats"           element={<StatsPage />} />
                 <Route path="srs"             element={<SrsOverviewPage />} />
                 <Route path="review"          element={<ReviewSessionPage />} />
+                <Route path="review-dashboard" element={<ReviewDashboardPage />} />
                 <Route path="*"               element={<Navigate to="/" replace />} />
               </Routes>
             </Layout>

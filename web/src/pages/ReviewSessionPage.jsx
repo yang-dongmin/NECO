@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
-import { ArrowLeft, RotateCcw, Play, Clock, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, RotateCcw, Clock, CheckCircle2 } from 'lucide-react'
 import { getNotes } from '../api/client'
 import { useSrsStore } from '../store/srsStore'
 import { QUALITY_OPTIONS } from '../lib/sm2'

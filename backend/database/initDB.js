@@ -116,7 +116,7 @@ async function initDB() {
     }
 }
 
-initDB();
+// initDB()는 bootstrap()에서 호출됨 — 여기서 단독 호출하면 이중 실행 버그 발생
 
 // ── Phase 3 마이그레이션 (서버 재시작 시 자동 적용) ─────────────────────────
 async function phase3Migration() {
@@ -158,11 +158,54 @@ async function phase4Migration() {
     }
 }
 
-// 🔥 핵심 수정 부분
+// ── Phase 5 마이그레이션 (코드노트 SRS) ──────────────────────────────────────
+async function phase5Migration() {
+    try {
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS code_note_srs (
+                id               INT AUTO_INCREMENT PRIMARY KEY,
+                user_id          INT NOT NULL,
+                code_note_id     INT NOT NULL,
+                ef               FLOAT   DEFAULT 2.5,
+                interval_days    INT     DEFAULT 0,
+                repetitions      INT     DEFAULT 0,
+                next_review_at   DATETIME,
+                last_reviewed_at DATETIME,
+                UNIQUE KEY uq_user_code_note (user_id, code_note_id),
+                FOREIGN KEY (user_id)      REFERENCES users(id)      ON DELETE CASCADE,
+                FOREIGN KEY (code_note_id) REFERENCES code_notes(id) ON DELETE CASCADE
+            )
+        `);
+        console.log('✓ code_note_srs 테이블 준비 완료');
+    } catch (err) {
+        console.error('Phase 5 마이그레이션 실패:', err);
+    }
+}
+
+// ── Phase 6 마이그레이션 (스트릭 시스템) ─────────────────────────────────────
+async function phase6Migration() {
+    try {
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS user_streaks (
+                user_id          INT PRIMARY KEY,
+                current_streak   INT     DEFAULT 0,
+                longest_streak   INT     DEFAULT 0,
+                last_review_date DATE    DEFAULT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        `);
+        console.log('✓ user_streaks 테이블 준비 완료');
+    } catch (err) {
+        console.error('Phase 6 마이그레이션 실패:', err);
+    }
+}
+
 async function bootstrap() {
     await initDB();
     await phase3Migration();
     await phase4Migration();
+    await phase5Migration();
+    await phase6Migration();
 }
 
 bootstrap();

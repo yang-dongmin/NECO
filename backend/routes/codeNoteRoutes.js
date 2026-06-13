@@ -3,6 +3,7 @@ const router = express.Router();
 
 const db  = require("../database/db");
 const auth = require("../middleware/authMiddleware");
+const { updateStreak } = require("../controllers/helpers");
 
 router.post("/", auth, async (req, res) => {
     try {
@@ -132,6 +133,58 @@ router.get("/public", auth, async (req, res) => {
     }
 });
 
+// GET /code-notes/srs — 내 코드노트 SRS 카드 목록 (/:id 앞에 있어야 함)
+router.get("/srs", auth, async (req, res) => {
+    try {
+        const [rows] = await db.query(
+            `SELECT code_note_id, ef, interval_days, repetitions, next_review_at, last_reviewed_at
+             FROM code_note_srs WHERE user_id = ?`,
+            [req.user.id]
+        );
+        res.json({ cards: rows });
+    } catch (error) {
+        console.error("코드노트 SRS 조회 에러:", error);
+        res.status(500).json({ message: "서버 오류" });
+    }
+});
+
+// GET /code-notes/due — 오늘 복습할 코드노트 (quiz 있는 카드 중 next_review_at <= 오늘)
+router.get("/due", auth, async (req, res) => {
+    try {
+        const today = new Date();
+        today.setHours(23, 59, 59, 999);
+
+        // SRS 카드가 있고 오늘 이내인 것 + 아직 SRS 카드 없지만 quiz 가진 노트도 포함 (미시작)
+        const [dueRows] = await db.query(
+            `SELECT
+                cn.id, cn.code, cn.comment, cn.language_id AS languageId,
+                cn.file_name AS fileName, cn.quiz, cn.is_public AS isPublic,
+                cn.created_at AS createdAt,
+                s.ef, s.interval_days AS intervalDays, s.repetitions,
+                s.next_review_at AS nextReviewAt, s.last_reviewed_at AS lastReviewedAt
+             FROM code_notes cn
+             LEFT JOIN code_note_srs s
+               ON s.code_note_id = cn.id AND s.user_id = cn.user_id
+             WHERE cn.user_id = ?
+               AND cn.quiz IS NOT NULL
+               AND (s.next_review_at IS NULL OR s.next_review_at <= ?)
+             ORDER BY COALESCE(s.next_review_at, '1970-01-01') ASC`,
+            [req.user.id, today]
+        );
+
+        // SRS 전체 카드 수 (통계용)
+        const [[{ total }]] = await db.query(
+            `SELECT COUNT(*) AS total FROM code_note_srs WHERE user_id = ?`,
+            [req.user.id]
+        );
+
+        res.json({ due: dueRows, totalSrsCards: total });
+    } catch (error) {
+        console.error("코드노트 due 조회 에러:", error);
+        res.status(500).json({ message: "서버 오류" });
+    }
+});
+
 router.get("/:id", auth, async (req, res) => {
     try {
         const noteId = req.params.id;
@@ -179,21 +232,85 @@ router.get("/:id", auth, async (req, res) => {
     }
 });
 
+// PATCH /code-notes/:id/quiz-review — SM-2 SRS 복습 결과 제출 (/:id 앞에 있어야 함)
+router.patch("/:id/quiz-review", auth, async (req, res) => {
+    try {
+        const userId     = req.user.id;
+        const codeNoteId = Number(req.params.id);
+        const { quality } = req.body; // 0~5
+
+        if (quality === undefined || quality < 0 || quality > 5) {
+            return res.status(400).json({ message: 'quality 값은 0~5 사이여야 합니다.' });
+        }
+
+        // 노트 소유 확인
+        const [[note]] = await db.query(
+            'SELECT id FROM code_notes WHERE id = ? AND user_id = ?',
+            [codeNoteId, userId]
+        );
+        if (!note) return res.status(404).json({ message: '노트를 찾을 수 없습니다.' });
+
+        // 기존 SRS 카드 조회
+        const [[card]] = await db.query(
+            'SELECT ef, interval_days, repetitions FROM code_note_srs WHERE user_id = ? AND code_note_id = ?',
+            [userId, codeNoteId]
+        );
+
+        // SM-2 계산
+        let ef          = card ? card.ef          : 2.5;
+        let intervalDays = card ? card.interval_days : 0;
+        let repetitions  = card ? card.repetitions   : 0;
+
+        if (quality >= 3) {
+            if (repetitions === 0)      intervalDays = 1;
+            else if (repetitions === 1) intervalDays = 6;
+            else                        intervalDays = Math.round(intervalDays * ef);
+            repetitions++;
+        } else {
+            repetitions  = 0;
+            intervalDays = 1;
+        }
+        ef = ef + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
+        if (ef < 1.3) ef = 1.3;
+
+        const nextReviewAt = new Date(Date.now() + intervalDays * 86400000)
+            .toISOString().slice(0, 19).replace('T', ' ');
+
+        await db.query(
+            `INSERT INTO code_note_srs
+             (user_id, code_note_id, ef, interval_days, repetitions, next_review_at, last_reviewed_at)
+             VALUES (?, ?, ?, ?, ?, ?, NOW())
+             ON DUPLICATE KEY UPDATE
+                 ef               = VALUES(ef),
+                 interval_days    = VALUES(interval_days),
+                 repetitions      = VALUES(repetitions),
+                 next_review_at   = VALUES(next_review_at),
+                 last_reviewed_at = NOW()`,
+            [userId, codeNoteId, ef, intervalDays, repetitions, nextReviewAt]
+        );
+
+        const streak = await updateStreak(userId);
+        res.json({ ef, intervalDays, repetitions, nextReviewAt, streak });
+    } catch (error) {
+        console.error('quiz-review error:', error);
+        res.status(500).json({ message: 'server error' });
+    }
+});
+
 router.patch("/:id", auth, async (req, res) => {
     try {
         const noteId = req.params.id;
         const { comment, isPublic } = req.body;
 
         if (comment === undefined && isPublic === undefined) {
-            return res.status(400).json({ message: "수정할 항목이 없습니다." });
+            return res.status(400).json({ message: "nothing to update" });
         }
 
-        // 본인 노트인지 확인
         const [[note]] = await db.query(
             "SELECT id FROM code_notes WHERE id = ? AND user_id = ?",
             [noteId, req.user.id]
         );
-        if (!note) return res.status(404).json({ message: "노트를 찾을 수 없습니다." });
+        if (!note) return res.status(404).json({ message: "not found" });
 
         const fields = [];
         const values = [];
@@ -206,60 +323,37 @@ router.patch("/:id", auth, async (req, res) => {
             values
         );
 
-        res.json({ message: "수정 성공" });
+        res.json({ message: "updated" });
     } catch (error) {
-        console.error("주석 수정 에러:", error);
-        res.status(500).json({ message: "서버 오류" });
+        console.error("patch error:", error);
+        res.status(500).json({ message: "server error" });
     }
 });
 
 router.delete("/:id", auth, async (req, res) => {
     try {
-        const noteId = req.params.id;
-
         const [result] = await db.query(
-            `
-            DELETE FROM code_notes
-            WHERE id = ?
-              AND user_id = ?
-            `,
-            [
-                noteId,
-                req.user.id
-            ]
+            "DELETE FROM code_notes WHERE id = ? AND user_id = ?",
+            [req.params.id, req.user.id]
         );
-
-        if (result.affectedRows === 0) {
-            return res.status(404).json({
-                message: "삭제할 주석을 찾을 수 없습니다."
-            });
-        }
-
-        res.json({
-            message: "주석 삭제 성공"
-        });
-
+        if (result.affectedRows === 0) return res.status(404).json({ message: "not found" });
+        res.json({ message: "deleted" });
     } catch (error) {
-        console.error("주석 삭제 에러:", error);
-
-        res.status(500).json({
-            message: "서버 오류"
-        });
+        console.error("delete error:", error);
+        res.status(500).json({ message: "server error" });
     }
 });
 
-// POST /code-notes/:id/like — 좋아요 토글
 router.post("/:id/like", auth, async (req, res) => {
     try {
         const userId     = req.user.id;
         const codeNoteId = Number(req.params.id);
 
-        // 공개 노트인지 확인
-        const [[note]] = await db.query(
+        const [[pub]] = await db.query(
             "SELECT id FROM code_notes WHERE id = ? AND is_public = 1",
             [codeNoteId]
         );
-        if (!note) return res.status(404).json({ message: "노트를 찾을 수 없습니다." });
+        if (!pub) return res.status(404).json({ message: "not found" });
 
         const [[existing]] = await db.query(
             "SELECT 1 FROM code_note_likes WHERE user_id = ? AND code_note_id = ?",
@@ -288,8 +382,8 @@ router.post("/:id/like", auth, async (req, res) => {
             return res.json({ liked: true, likeCount: count });
         }
     } catch (error) {
-        console.error("좋아요 토글 에러:", error);
-        res.status(500).json({ message: "서버 오류" });
+        console.error("like error:", error);
+        res.status(500).json({ message: "server error" });
     }
 });
 

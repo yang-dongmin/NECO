@@ -1,6 +1,6 @@
 // 공개 노트 저장 시 AI가 핵심 부분을 찾아 빈칸 문제로 변환
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
 
 interface QuizResult {
   success: boolean;
@@ -10,20 +10,30 @@ interface QuizResult {
   message?: string;
 }
 
+// 싱글턴: 모듈 로드 시 한 번만 생성
+let _model: GenerativeModel | null = null;
+
+function getModel(): GenerativeModel | null {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return null;
+  if (!_model) {
+    const genAI = new GoogleGenerativeAI(apiKey);
+    _model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+  }
+  return _model;
+}
+
 export async function generateQuiz(
   code: string,
   comment: string,
   languageId: string
 ): Promise<QuizResult> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return { success: false, message: 'API 키가 없어요.' };
+  const model = getModel();
+  if (!model) {
+    return { success: false, message: 'GEMINI_API_KEY 환경변수가 설정되어 있지 않아요.' };
   }
 
   try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-
     const prompt = `
 다음 ${languageId} 코드에서 핵심이 되는 부분 하나를 골라 빈칸 문제를 만들어라.
 

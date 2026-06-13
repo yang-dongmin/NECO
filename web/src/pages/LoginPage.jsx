@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store'
+import { login as apiLogin, register as apiRegister } from '../api/client'
 import logo from '../assets/neco.png';
 
 export default function LoginPage() {
@@ -32,38 +33,14 @@ export default function LoginPage() {
 
     setIsLoading(true)
     try {
-      const API = import.meta.env.VITE_API_URL || 'http://localhost:5001/api'
-      const response = await fetch(`${API}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        setError(data.message || '로그인에 실패했습니다.')
-        return
-      }
-
+      const data = await apiLogin({ email, password })
       login(
-        {
-          id: data.user.id,
-          name: data.user.nickname,
-          email: data.user.email,
-        },
+        { id: data.user.id, name: data.user.nickname, email: data.user.email },
         data.token
       )
-
       navigate('/')
-    } catch (error) {
-      console.error(error)
-      setError('서버에 연결할 수 없습니다.')
+    } catch (err) {
+      setError(err?.response?.data?.message || '서버에 연결할 수 없습니다.')
     } finally {
       setIsLoading(false)
     }
@@ -80,33 +57,13 @@ export default function LoginPage() {
 
     setIsLoading(true)
     try {
-      const API = import.meta.env.VITE_API_URL || 'http://localhost:5001/api'
-      const response = await fetch(`${API}/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          nickname,
-          email,
-          password,
-        }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        setError(data.message || '회원가입에 실패했습니다.')
-        return
-      }
-
+      await apiRegister({ nickname, email, password })
       setSuccess('회원가입이 완료되었습니다. 로그인해주세요.')
       setIsRegisterMode(false)
       setPassword('')
       setNickname('')
-    } catch (error) {
-      console.error(error)
-      setError('서버에 연결할 수 없습니다.')
+    } catch (err) {
+      setError(err?.response?.data?.message || '서버에 연결할 수 없습니다.')
     } finally {
       setIsLoading(false)
     }

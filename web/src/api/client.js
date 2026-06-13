@@ -43,3 +43,20 @@ export const getTags = () => api.get('/notes/tags')
 export const getBookmarks    = ()   => api.get('/notes/bookmarks')
 export const addBookmark     = (id) => api.post(`/notes/bookmarks/${id}`)
 export const removeBookmark  = (id) => api.delete(`/notes/bookmarks/${id}`)
+
+// ── Code Notes ────────────────────────────────────────────────
+export const fetchMyCodeNotes     = ()          => api.get('/code-notes')
+export const fetchPublicCodeNotes = ()           => api.get('/code-notes/public')
+export const fetchCodeNoteById    = (id)         => api.get(`/code-notes/${id}`)
+export const toggleCodeNoteLike   = (id)         => api.post(`/code-notes/${id}/like`)
+export const deleteCodeNote       = (id)         => api.delete(`/code-notes/${id}`)
+export const updateCodeNote       = (id, body)   => api.patch(`/code-notes/${id}`, body)
+export const reviewCodeNoteQuiz   = (id, quality) => api.patch(`/code-notes/${id}/quiz-review`, { quality })
+export const fetchCodeNoteSrs     = ()           => api.get('/code-notes/srs')
+export const fetchDueCodeNotes    = ()           => api.get('/code-notes/due')
+
+// ── Streak ────────────────────────────────────────────────────
+export const fetchStreak = () => api.get('/streak')
+
+// ── Search ────────────────────────────────────────────────────
+export const searchAll = (q) => api.get('/search', { params: { q } })

@@ -1,4 +1,4 @@
-// 컨트롤러 공통 유틸: DB, 상수, 헬퍼 함수
+// helpers.js - Controller utilities
 const db = require('../database/db')
 
 const VALID_SUBJECTS = [
@@ -56,4 +56,33 @@ function toNote(row) {
     }
 }
 
-module.exports = { db, VALID_SUBJECTS, VALID_LANGUAGES, upsertTags, attachTags, toNote }
+// Streak update - count once per day
+async function updateStreak(userId) {
+    const today = new Date().toISOString().slice(0, 10)
+    const [[row]] = await db.query(
+        'SELECT current_streak, longest_streak, last_review_date FROM user_streaks WHERE user_id = ?',
+        [userId]
+    )
+    if (!row) {
+        await db.query(
+            'INSERT INTO user_streaks (user_id, current_streak, longest_streak, last_review_date) VALUES (?,1,1,?)',
+            [userId, today]
+        )
+        return { currentStreak: 1, longestStreak: 1 }
+    }
+
+    const last = row.last_review_date ? String(row.last_review_date).slice(0, 10) : null
+    if (last === today) return { currentStreak: row.current_streak, longestStreak: row.longest_streak }
+
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10)
+    const current = last === yesterday ? row.current_streak + 1 : 1
+    const longest = Math.max(current, row.longest_streak)
+
+    await db.query(
+        'UPDATE user_streaks SET current_streak=?, longest_streak=?, last_review_date=? WHERE user_id=?',
+        [current, longest, today, userId]
+    )
+    return { currentStreak: current, longestStreak: longest }
+}
+
+module.exports = { db, VALID_SUBJECTS, VALID_LANGUAGES, upsertTags, attachTags, toNote, updateStreak }

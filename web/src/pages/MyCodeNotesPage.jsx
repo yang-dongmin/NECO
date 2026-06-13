@@ -1,209 +1,9 @@
-import { useEffect, useMemo, useState, useRef } from 'react'
-import { ArrowUpDown, Trash2, Code2, Clock, Lock, Globe, Zap, Eye, EyeOff, CheckCircle2, XCircle } from 'lucide-react'
-import { fetchMyNotes } from '../api/necoApi'
+import { useEffect, useMemo, useState, useCallback } from 'react'
+import { ArrowUpDown } from 'lucide-react'
+import { fetchMyCodeNotes, fetchCodeNoteSrs } from '../api/client'
+import { subscribeToNotes } from '../api/necoApi'
 import { EmptyState } from '../components/ui'
-import api from '../api/client'
-
-// ── 퀴즈 모달 ────────────────────────────────────────────────────────────────
-function QuizModal({ quiz, onClose }) {
-  const [input,   setInput]   = useState('')
-  const [result,  setResult]  = useState(null)   // 'correct' | 'wrong'
-  const [showHint, setShowHint] = useState(false)
-  const inputRef = useRef(null)
-
-  useEffect(() => {
-    inputRef.current?.focus()
-    const handleKey = (e) => { if (e.key === 'Escape') onClose() }
-    window.addEventListener('keydown', handleKey)
-    return () => window.removeEventListener('keydown', handleKey)
-  }, [onClose])
-
-  const handleSubmit = () => {
-    if (!input.trim()) return
-    const correct = input.trim().toLowerCase() === quiz.answer.trim().toLowerCase()
-    setResult(correct ? 'correct' : 'wrong')
-  }
-
-  const handleRetry = () => {
-    setInput('')
-    setResult(null)
-    setShowHint(false)
-    setTimeout(() => inputRef.current?.focus(), 50)
-  }
-
-  // [___] 부분을 강조해서 렌더링
-  const renderBlankedCode = (code) => {
-    return code.split('[___]').map((part, i, arr) => (
-      <span key={i}>
-        {part}
-        {i < arr.length - 1 && (
-          <span style={{
-            background: result === 'correct' ? '#d1fae5' : result === 'wrong' ? '#fee2e2' : '#fef3c7',
-            color:      result === 'correct' ? '#065f46' : result === 'wrong' ? '#991b1b' : '#92400e',
-            border:     `1px solid ${result === 'correct' ? '#6ee7b7' : result === 'wrong' ? '#fca5a5' : '#fcd34d'}`,
-            borderRadius: 4, padding: '0 6px', fontWeight: 700,
-          }}>
-            {result ? quiz.answer : '___'}
-          </span>
-        )}
-      </span>
-    ))
-  }
-
-  return (
-    <div
-      onClick={onClose}
-      style={{
-        position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.5)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        zIndex: 1000, padding: 16,
-      }}
-    >
-      <div
-        onClick={e => e.stopPropagation()}
-        style={{
-          background: '#fff', borderRadius: 16, width: '100%', maxWidth: 560,
-          boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
-          maxHeight: '90vh', overflow: 'auto',
-        }}
-      >
-        {/* 헤더 */}
-        <div style={{
-          padding: '18px 22px 14px',
-          borderBottom: '1px solid #f1f5f9',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Zap size={16} color="#f59e0b" fill="#f59e0b" />
-            <span style={{ fontWeight: 700, fontSize: 15, color: '#1e293b' }}>빈칸 퀴즈</span>
-          </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: 18, lineHeight: 1 }}>✕</button>
-        </div>
-
-        <div style={{ padding: '18px 22px' }}>
-          {/* 빈칸 코드 */}
-          <div style={{
-            background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10,
-            padding: '12px 14px', marginBottom: 16,
-            fontFamily: 'JetBrains Mono, monospace', fontSize: 12,
-            lineHeight: 1.8, whiteSpace: 'pre-wrap', wordBreak: 'break-all',
-            color: '#334155',
-          }}>
-            {renderBlankedCode(quiz.blankedCode)}
-          </div>
-
-          {/* 힌트 */}
-          {quiz.hint && (
-            <button
-              onClick={() => setShowHint(p => !p)}
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: 5,
-                fontSize: 12, color: '#64748b', marginBottom: showHint ? 8 : 14, padding: 0,
-              }}
-            >
-              {showHint ? <EyeOff size={12} /> : <Eye size={12} />}
-              {showHint ? '힌트 숨기기' : '힌트 보기'}
-            </button>
-          )}
-          {showHint && quiz.hint && (
-            <div style={{
-              background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8,
-              padding: '8px 12px', fontSize: 12, color: '#92400e', marginBottom: 14,
-            }}>
-              💡 {quiz.hint}
-            </div>
-          )}
-
-          {/* 결과 메시지 */}
-          {result && (
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              background: result === 'correct' ? '#f0fdf4' : '#fef2f2',
-              border: `1px solid ${result === 'correct' ? '#bbf7d0' : '#fecaca'}`,
-              borderRadius: 8, padding: '10px 14px', marginBottom: 14,
-              fontSize: 13, fontWeight: 600,
-              color: result === 'correct' ? '#15803d' : '#dc2626',
-            }}>
-              {result === 'correct'
-                ? <><CheckCircle2 size={15} /> 정답입니다! 🎉</>
-                : <><XCircle size={15} /> 오답이에요. 정답: <code style={{ fontFamily: 'JetBrains Mono, monospace' }}>{quiz.answer}</code></>
-              }
-            </div>
-          )}
-
-          {/* 입력 + 버튼 */}
-          {!result ? (
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input
-                ref={inputRef}
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-                placeholder="빈칸에 들어갈 답을 입력하세요..."
-                style={{
-                  flex: 1, padding: '9px 13px', borderRadius: 8,
-                  border: '1px solid #e2e8f0', fontSize: 13,
-                  fontFamily: 'JetBrains Mono, monospace',
-                  outline: 'none',
-                }}
-              />
-              <button
-                onClick={handleSubmit}
-                disabled={!input.trim()}
-                style={{
-                  padding: '9px 18px', borderRadius: 8, border: 'none',
-                  background: input.trim() ? '#2563eb' : '#e2e8f0',
-                  color: input.trim() ? '#fff' : '#94a3b8',
-                  fontWeight: 600, fontSize: 13, cursor: input.trim() ? 'pointer' : 'default',
-                }}
-              >
-                확인
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={handleRetry}
-              style={{
-                width: '100%', padding: '10px 0', borderRadius: 8,
-                background: '#f1f5f9', border: 'none', cursor: 'pointer',
-                fontSize: 13, fontWeight: 600, color: '#475569',
-              }}
-            >
-              다시 풀기
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-const LANG_MAP = {
-  javascript:       'JavaScript',
-  typescript:       'TypeScript',
-  javascriptreact:  'JSX',
-  typescriptreact:  'TSX',
-  python:           'Python',
-  java:             'Java',
-  c:                'C',
-  cpp:              'C++',
-  kotlin:           'Kotlin',
-  sql:              'SQL',
-}
-
-const LANG_COLOR = {
-  javascript:       { bg: '#fef3c7', color: '#d97706' },
-  typescript:       { bg: '#eff6ff', color: '#2563eb' },
-  javascriptreact:  { bg: '#fef3c7', color: '#d97706' },
-  typescriptreact:  { bg: '#eff6ff', color: '#2563eb' },
-  python:           { bg: '#f0fdf4', color: '#16a34a' },
-  java:             { bg: '#fef2f2', color: '#dc2626' },
-  c:                { bg: '#f5f3ff', color: '#7c3aed' },
-  cpp:              { bg: '#f5f3ff', color: '#7c3aed' },
-  kotlin:           { bg: '#fdf4ff', color: '#a21caf' },
-  sql:              { bg: '#ecfdf5', color: '#059669' },
-}
+import CodeNoteCard from '../components/CodeNoteCard'
 
 const LANGS = [
   { value: '',               label: '전체 언어'   },
@@ -224,165 +24,6 @@ const SORT_OPTIONS = [
   { value: 'oldest', label: '오래된순' },
 ]
 
-function CodeNoteCard({ note, onDelete }) {
-  const [hovered,   setHovered]   = useState(false)
-  const [expanded,  setExpanded]  = useState(false)
-  const [deleting,  setDeleting]  = useState(false)
-  const [quizOpen,  setQuizOpen]  = useState(false)
-
-  const lang      = note.languageId || ''
-  const langLabel = LANG_MAP[lang] ?? lang
-  const langStyle = LANG_COLOR[lang] ?? { bg: '#f1f5f9', color: '#475569' }
-
-  const quiz = (() => {
-    try { return typeof note.quiz === 'string' ? JSON.parse(note.quiz) : note.quiz }
-    catch { return null }
-  })()
-
-  const codeLines = (note.code || '').split('\n')
-  const codePreview = codeLines.slice(0, expanded ? undefined : 5).join('\n')
-  const hasMore = codeLines.length > 5
-
-  const handleDelete = async (e) => {
-    e.stopPropagation()
-    if (!window.confirm('이 코드 노트를 삭제할까요?')) return
-    setDeleting(true)
-    try {
-      await api.delete(`/code-notes/${note.id}`)
-      onDelete(note.id)
-    } catch {
-      alert('삭제 실패')
-      setDeleting(false)
-    }
-  }
-
-  return (
-    <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        background: '#fff',
-        border: `1px solid ${hovered ? '#bfdbfe' : '#f1f5f9'}`,
-        borderRadius: 12,
-        overflow: 'hidden',
-        boxShadow: hovered ? '0 4px 16px rgba(37,99,235,0.10)' : '0 1px 3px rgba(0,0,0,0.05)',
-        display: 'flex',
-        transition: 'all 0.18s ease',
-        transform: hovered ? 'translateY(-2px)' : 'none',
-      }}
-    >
-      {/* 언어 인디케이터 */}
-      <div style={{ width: 4, flexShrink: 0, background: langStyle.color, borderRadius: '12px 0 0 12px' }} />
-
-      <div style={{ flex: 1, padding: '14px 16px' }}>
-        {/* 헤더 */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
-          {langLabel && (
-            <span style={{
-              fontSize: 10, fontWeight: 700, padding: '2px 9px', borderRadius: 99,
-              background: langStyle.bg, color: langStyle.color,
-              border: `1px solid ${langStyle.color}30`,
-              fontFamily: 'JetBrains Mono, monospace',
-            }}>
-              {langLabel}
-            </span>
-          )}
-          {note.fileName && (
-            <span style={{ fontSize: 10, color: '#64748b', display: 'flex', alignItems: 'center', gap: 3, fontFamily: 'JetBrains Mono, monospace' }}>
-              <Code2 size={10} />
-              {note.fileName.split(/[\\/]/).pop()}
-            </span>
-          )}
-          <span style={{
-            fontSize: 9, fontWeight: 600, padding: '2px 8px', borderRadius: 99,
-            background: note.isPublic ? '#f0fdf4' : '#f8fafc',
-            color: note.isPublic ? '#16a34a' : '#94a3b8',
-            border: `1px solid ${note.isPublic ? '#bbf7d0' : '#e2e8f0'}`,
-            display: 'flex', alignItems: 'center', gap: 3,
-          }}>
-            {note.isPublic ? <><Globe size={8} /> 공개</> : <><Lock size={8} /> 비공개</>}
-          </span>
-          {quiz && (
-            <button
-              onClick={e => { e.stopPropagation(); setQuizOpen(true) }}
-              style={{
-                fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 99,
-                background: '#fffbeb', color: '#d97706', border: '1px solid #fde68a',
-                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3,
-              }}
-            >
-              <Zap size={8} fill="#d97706" /> 퀴즈 풀기
-            </button>
-          )}
-
-          {/* 삭제 버튼 */}
-          <button
-            onClick={handleDelete}
-            disabled={deleting}
-            style={{
-              marginLeft: 'auto', background: 'none', border: 'none',
-              cursor: 'pointer', padding: 4, borderRadius: 6,
-              color: hovered ? '#ef4444' : '#cbd5e1',
-              transition: 'color 0.15s',
-              display: 'flex', alignItems: 'center',
-            }}
-          >
-            <Trash2 size={13} />
-          </button>
-        </div>
-
-        {/* 코드 미리보기 */}
-        <div style={{
-          background: hovered ? '#f0f7ff' : '#f8fafc',
-          border: `1px solid ${hovered ? '#dbeafe' : '#f1f5f9'}`,
-          borderRadius: 8, padding: '9px 12px', marginBottom: 10,
-          fontSize: 11, color: '#334155', lineHeight: 1.7,
-          fontFamily: 'JetBrains Mono, monospace',
-          whiteSpace: 'pre-wrap', wordBreak: 'break-all',
-          transition: 'background 0.18s',
-        }}>
-          {codePreview || '코드 없음'}
-          {hasMore && (
-            <button
-              onClick={() => setExpanded(p => !p)}
-              style={{
-                display: 'block', marginTop: 6, background: 'none', border: 'none',
-                cursor: 'pointer', fontSize: 10, color: '#2563eb', padding: 0,
-              }}
-            >
-              {expanded ? '접기 ▲' : `+${codeLines.length - 5}줄 더 보기 ▼`}
-            </button>
-          )}
-        </div>
-
-        {/* 주석 */}
-        {note.comment && (
-          <div style={{
-            fontSize: 12, color: '#475569', lineHeight: 1.6, marginBottom: 10,
-            overflow: 'hidden', textOverflow: 'ellipsis',
-            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-          }}>
-            {note.comment}
-          </div>
-        )}
-
-        {/* 푸터 */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#94a3b8' }}>
-            <Clock size={10} />
-            {new Date(note.createdAt).toLocaleDateString('ko-KR')}
-          </div>
-        </div>
-      </div>
-
-      {/* 퀴즈 모달 */}
-      {quizOpen && quiz && (
-        <QuizModal quiz={quiz} onClose={() => setQuizOpen(false)} />
-      )}
-    </div>
-  )
-}
-
 export default function MyCodeNotesPage() {
   const [notes,    setNotes]    = useState([])
   const [loading,  setLoading]  = useState(true)
@@ -391,11 +32,45 @@ export default function MyCodeNotesPage() {
   const [sort,     setSort]     = useState('newest')
   const [showSort, setShowSort] = useState(false)
 
+  // SRS 카드 맵: { [code_note_id]: { ef, interval_days, repetitions, next_review_at, ... } }
+  const [srsMap, setSrsMap] = useState({})
+
   useEffect(() => {
-    fetchMyNotes().then(data => {
-      setNotes(Array.isArray(data) ? data : [])
-      setLoading(false)
+    Promise.all([
+      fetchMyCodeNotes().catch(() => []),
+      fetchCodeNoteSrs().catch(() => ({ cards: [] })),
+    ]).then(([notesData, srsData]) => {
+      setNotes(Array.isArray(notesData) ? notesData : [])
+      // cards 배열을 code_note_id 키 맵으로 변환
+      const map = {}
+      const cards = srsData?.cards ?? []
+      for (const card of cards) {
+        map[card.code_note_id] = card
+      }
+      setSrsMap(map)
+    }).finally(() => setLoading(false))
+
+    // VSCode에서 새 노트 저장 시 실시간 반영
+    const unsubscribe = subscribeToNotes((newNote) => {
+      setNotes(prev => [newNote, ...prev])
     })
+    return unsubscribe
+  }, [])
+
+  // QuizModal의 onReviewed 콜백 — SRS 결과로 맵 업데이트
+  const handleSrsUpdate = useCallback((noteId, srsData) => {
+    // srsData: { ef, intervalDays, repetitions, nextReviewAt }
+    setSrsMap(prev => ({
+      ...prev,
+      [noteId]: {
+        ...prev[noteId],
+        code_note_id:   noteId,
+        ef:             srsData.ef,
+        interval_days:  srsData.intervalDays,
+        repetitions:    srsData.repetitions,
+        next_review_at: srsData.nextReviewAt,
+      },
+    }))
   }, [])
 
   const displayed = useMemo(() => {
@@ -517,7 +192,13 @@ export default function MyCodeNotesPage() {
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(340px,1fr))', gap: 14 }}>
           {displayed.map(note => (
-            <CodeNoteCard key={note.id} note={note} onDelete={handleDelete} />
+            <CodeNoteCard
+              key={note.id}
+              note={note}
+              onDelete={handleDelete}
+              srsCard={srsMap[note.id] ?? null}
+              onSrsUpdate={handleSrsUpdate}
+            />
           ))}
         </div>
       )}
