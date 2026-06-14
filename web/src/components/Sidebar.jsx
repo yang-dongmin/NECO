@@ -183,12 +183,18 @@ export default function Sidebar() {
         {/* 로그인/비로그인 */}
         {user ? (
           <div style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 10px', borderRadius:8, transition:'background 0.12s' }}>
-            <div style={{ width:30, height:30, borderRadius:'50%', flexShrink:0, background:'linear-gradient(135deg,#2563eb,#7c3aed)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:700, color:'#fff' }}>
-              {(user.name ?? user.nickname ?? 'U').slice(0,1).toUpperCase()}
-            </div>
-            <div style={{ minWidth:0, flex:1 }}>
-              <div style={{ fontSize:12, fontWeight:600, color:'#1e293b' }}>{user.name ?? user.nickname}</div>
-              <div style={{ fontSize:10, color:'#94a3b8', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{user.email}</div>
+            <div
+              onClick={() => navigate('/profile')}
+              style={{ display:'flex', alignItems:'center', gap:10, flex:1, minWidth:0, cursor:'pointer' }}
+              title="마이페이지"
+            >
+              <div style={{ width:30, height:30, borderRadius:'50%', flexShrink:0, background:'linear-gradient(135deg,#2563eb,#7c3aed)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:700, color:'#fff' }}>
+                {(user.name ?? user.nickname ?? 'U').slice(0,1).toUpperCase()}
+              </div>
+              <div style={{ minWidth:0, flex:1 }}>
+                <div style={{ fontSize:12, fontWeight:600, color:'#1e293b' }}>{user.name ?? user.nickname}</div>
+                <div style={{ fontSize:10, color:'#94a3b8', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{user.email}</div>
+              </div>
             </div>
             <button
               onClick={handleLogout}

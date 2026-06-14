@@ -22,8 +22,11 @@ api.interceptors.response.use(
 export default api
 
 // ── Auth ──────────────────────────────────────
-export const login    = (body) => api.post('/auth/login', body)
-export const register = (body) => api.post('/auth/register', body)
+export const login          = (body) => api.post('/auth/login', body)
+export const register       = (body) => api.post('/auth/register', body)
+export const updateProfile  = (body) => api.put('/auth/profile', body)
+export const changePassword = (body) => api.put('/auth/password', body)
+export const deleteAccount  = (body) => api.delete('/auth/account', { data: body })
 
 // ── Notes (정처기 오답노트) ───────────────────
 export const getNotes   = (params) => api.get('/notes', { params })

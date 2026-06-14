@@ -12,6 +12,8 @@ import SrsOverviewPage   from './pages/SrsOverviewPage'
 import PublicNoteListPage from './pages/PublicNoteListPage'
 import MyCodeNotesPage        from './pages/MyCodeNotesPage'
 import ReviewDashboardPage   from './pages/ReviewDashboardPage'
+import ProfilePage           from './pages/ProfilePage'
+import NotFoundPage          from './pages/NotFoundPage'
 
 function PrivateRoute({ children }) {
   const token = useAuthStore((s) => s.token)
@@ -38,7 +40,8 @@ export default function App() {
                 <Route path="srs"             element={<SrsOverviewPage />} />
                 <Route path="review"          element={<ReviewSessionPage />} />
                 <Route path="review-dashboard" element={<ReviewDashboardPage />} />
-                <Route path="*"               element={<Navigate to="/" replace />} />
+                <Route path="profile"         element={<ProfilePage />} />
+                <Route path="*"               element={<NotFoundPage />} />
               </Routes>
             </Layout>
           </PrivateRoute>

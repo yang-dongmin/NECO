@@ -43,7 +43,7 @@ export default function NoteListPage() {
       const serverSort = (sort === 'weak' || sort === 'due') ? 'newest' : sort
       const params = {
         page:    filters.page || 1,
-        limit:   50,
+        limit:   200,
         sort:    serverSort,
         ...(filters.subject && { subject: filters.subject }),
         ...(filters.lang    && { language: filters.lang }),

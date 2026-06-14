@@ -40,6 +40,14 @@ export const useAuthStore = create((set) => ({
     })
   },
 
+  updateUser: (fields) => {
+    set((s) => {
+      const updated = { ...s.user, ...fields }
+      localStorage.setItem('neco_user', JSON.stringify(updated))
+      return { user: updated }
+    })
+  },
+
   logout: () => {
     localStorage.removeItem('token')
     localStorage.removeItem('neco_user')
