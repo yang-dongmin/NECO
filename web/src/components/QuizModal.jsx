@@ -3,12 +3,11 @@ import { Zap, Eye, EyeOff, CheckCircle2, XCircle } from 'lucide-react'
 import { reviewCodeNoteQuiz } from '../api/client'
 
 // noteId를 받아서 퀴즈 결과를 SRS에 반영
-// 정답 -> quality 4 (잘 맞춤), 오답 -> quality 1 (거의 모름)
-export default function QuizModal({ quiz, noteId, onClose, onReviewed, reviewEnabled = true }) {
-  const [input,      setInput]      = useState('')
-  const [result,     setResult]     = useState(null)   // 'correct' | 'wrong'
-  const [showHint,   setShowHint]   = useState(false)
-  const [submitting, setSubmitting] = useState(false)
+// 정답 → quality 4 (잘 맞춤), 오답 → quality 1 (거의 모름)
+export default function QuizModal({ quiz, noteId, onClose, onReviewed }) {
+  const [input,    setInput]    = useState('')
+  const [result,   setResult]   = useState(null)   // 'correct' | 'wrong'
+  const [showHint, setShowHint] = useState(false)
   const inputRef = useRef(null)
 
   useEffect(() => {
@@ -19,22 +18,19 @@ export default function QuizModal({ quiz, noteId, onClose, onReviewed, reviewEna
   }, [onClose])
 
   const handleSubmit = async () => {
-    if (!input.trim() || submitting) return
-
+    if (!input.trim()) return
     const correct = input.trim().toLowerCase() === quiz.answer.trim().toLowerCase()
     const outcome = correct ? 'correct' : 'wrong'
     setResult(outcome)
 
-    if (!reviewEnabled || !noteId) return
-
-    setSubmitting(true)
-    try {
-      const srsData = await reviewCodeNoteQuiz(noteId, correct ? 4 : 1)
-      onReviewed?.(noteId, srsData)
-    } catch {
-      // SRS 실패는 조용히 넘김 (퀴즈 경험에 영향 없음)
-    } finally {
-      setSubmitting(false)
+    // SRS 반영: 정답=4, 오답=1
+    if (noteId) {
+      try {
+        const srsData = await reviewCodeNoteQuiz(noteId, correct ? 4 : 1)
+        onReviewed?.(noteId, srsData)
+      } catch {
+        // SRS 실패는 조용히 넘김 (퀴즈 경험에 영향 없음)
+      }
     }
   }
 
@@ -91,7 +87,7 @@ export default function QuizModal({ quiz, noteId, onClose, onReviewed, reviewEna
             <Zap size={16} color="#f59e0b" fill="#f59e0b" />
             <span style={{ fontWeight: 700, fontSize: 15, color: '#1e293b' }}>빈칸 퀴즈</span>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: 18, lineHeight: 1 }}>x</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: 18, lineHeight: 1 }}>✕</button>
         </div>
 
         <div style={{ padding: '18px 22px' }}>
@@ -103,7 +99,7 @@ export default function QuizModal({ quiz, noteId, onClose, onReviewed, reviewEna
             lineHeight: 1.8, whiteSpace: 'pre-wrap', wordBreak: 'break-all',
             color: '#334155',
           }}>
-            {renderBlankedCode(quiz.blankedCode || '')}
+            {renderBlankedCode(quiz.blankedCode)}
           </div>
 
           {/* 힌트 */}
@@ -125,7 +121,7 @@ export default function QuizModal({ quiz, noteId, onClose, onReviewed, reviewEna
               background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8,
               padding: '8px 12px', fontSize: 12, color: '#92400e', marginBottom: 14,
             }}>
-              {quiz.hint}
+              💡 {quiz.hint}
             </div>
           )}
 
@@ -140,8 +136,8 @@ export default function QuizModal({ quiz, noteId, onClose, onReviewed, reviewEna
               color: result === 'correct' ? '#15803d' : '#dc2626',
             }}>
               {result === 'correct'
-                ? <><CheckCircle2 size={15} /> {reviewEnabled ? '정답입니다! 복습 주기가 늘어났어요.' : '정답입니다!'}</>
-                : <><XCircle size={15} /> 오답이에요. 정답: <code style={{ fontFamily: 'JetBrains Mono, monospace' }}>{quiz.answer}</code>{reviewEnabled ? ' - 곧 다시 복습해요.' : ''}</>
+                ? <><CheckCircle2 size={15} /> 정답입니다! 복습 주기가 늘어났어요 📈</>
+                : <><XCircle size={15} /> 오답이에요. 정답: <code style={{ fontFamily: 'JetBrains Mono, monospace' }}>{quiz.answer}</code> — 곧 다시 복습해요 🔁</>
               }
             </div>
           )}
@@ -164,15 +160,15 @@ export default function QuizModal({ quiz, noteId, onClose, onReviewed, reviewEna
               />
               <button
                 onClick={handleSubmit}
-                disabled={!input.trim() || submitting}
+                disabled={!input.trim()}
                 style={{
                   padding: '9px 18px', borderRadius: 8, border: 'none',
-                  background: input.trim() && !submitting ? '#2563eb' : '#e2e8f0',
-                  color: input.trim() && !submitting ? '#fff' : '#94a3b8',
-                  fontWeight: 600, fontSize: 13, cursor: input.trim() && !submitting ? 'pointer' : 'default',
+                  background: input.trim() ? '#2563eb' : '#e2e8f0',
+                  color: input.trim() ? '#fff' : '#94a3b8',
+                  fontWeight: 600, fontSize: 13, cursor: input.trim() ? 'pointer' : 'default',
                 }}
               >
-                {submitting ? '저장 중' : '확인'}
+                확인
               </button>
             </div>
           ) : (
