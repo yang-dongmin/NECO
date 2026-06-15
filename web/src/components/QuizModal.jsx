@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Zap, Eye, EyeOff, CheckCircle2, XCircle } from 'lucide-react'
 import { reviewCodeNoteQuiz } from '../api/client'
+import { createPortal } from 'react-dom'
 
 // noteId를 받아서 퀴즈 결과를 SRS에 반영
 // 정답 → quality 4 (잘 맞춤), 오답 → quality 1 (거의 모름)
@@ -19,7 +20,10 @@ export default function QuizModal({ quiz, noteId, onClose, onReviewed }) {
 
   const handleSubmit = async () => {
     if (!input.trim()) return
-    const correct = input.trim().toLowerCase() === quiz.answer.trim().toLowerCase()
+    const normalizeAnswer = (value) =>
+      value.trim().toLowerCase().replace(/\s+/g, '')
+
+    const correct = normalizeAnswer(input) === normalizeAnswer(quiz.answer)
     const outcome = correct ? 'correct' : 'wrong'
     setResult(outcome)
 
@@ -60,7 +64,7 @@ export default function QuizModal({ quiz, noteId, onClose, onReviewed }) {
     ))
   }
 
-  return (
+  return createPortal(
     <div
       onClick={onClose}
       style={{
@@ -185,6 +189,7 @@ export default function QuizModal({ quiz, noteId, onClose, onReviewed }) {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

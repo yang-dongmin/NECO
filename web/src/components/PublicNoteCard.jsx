@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Clock, User, Code2, Heart } from 'lucide-react'
+import { Clock, User, Code2, Heart, Zap } from 'lucide-react'
 import { toggleCodeNoteLike } from '../api/client'
+import QuizModal from './QuizModal'
 
 // 언어 ID → 표시 이름
 const LANG_MAP = {
@@ -35,6 +36,7 @@ export default function PublicNoteCard({ note, onClick }) {
   const [liked,     setLiked]     = useState(Boolean(note.likedByMe))
   const [likeCount, setLikeCount] = useState(Number(note.likeCount) || 0)
   const [liking,    setLiking]    = useState(false)
+  const [quizOpen, setQuizOpen] = useState(false)
 
   const lang      = note.languageId || note.language || ''
   const langLabel = LANG_MAP[lang] ?? lang
@@ -121,14 +123,28 @@ export default function PublicNoteCard({ note, onClick }) {
           )}
           {/* 빈칸 퀴즈 배지 */}
           {quiz && (
-            <span style={{
-              fontSize: 9, fontWeight: 700, padding: '2px 8px',
-              borderRadius: 99, background: '#fffbeb',
-              color: '#d97706', border: '1px solid #fde68a',
-              marginLeft: 'auto',
-            }}>
-              빈칸 퀴즈
-            </span>
+            <button
+              onClick={e => {
+                e.stopPropagation()
+                setQuizOpen(true)
+              }}
+              style={{
+                fontSize: 9,
+                fontWeight: 700,
+                padding: '2px 8px',
+                borderRadius: 99,
+                background: '#fffbeb',
+                color: '#d97706',
+                border: '1px solid #fde68a',
+                marginLeft: 'auto',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 3,
+              }}
+            >
+              <Zap size={8} fill="#d97706" /> 퀴즈 풀기
+            </button>
           )}
         </div>
 
@@ -193,6 +209,12 @@ export default function PublicNoteCard({ note, onClick }) {
           </div>
         </div>
       </div>
+      {quizOpen && quiz && (
+        <QuizModal
+          quiz={quiz}
+          onClose={() => setQuizOpen(false)}
+        />
+      )}
     </div>
   )
 }
