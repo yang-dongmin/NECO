@@ -1,9 +1,8 @@
 import { useState } from 'react'
-import { Clock, User, Code2, Heart, Zap } from 'lucide-react'
+import { Clock, User, Code2, Heart } from 'lucide-react'
 import { toggleCodeNoteLike } from '../api/client'
-import QuizModal from './QuizModal'
 
-// 언어 ID -> 표시 이름
+// 언어 ID → 표시 이름
 const LANG_MAP = {
   javascript:      'JavaScript',
   typescript:      'TypeScript',
@@ -36,7 +35,6 @@ export default function PublicNoteCard({ note, onClick }) {
   const [liked,     setLiked]     = useState(Boolean(note.likedByMe))
   const [likeCount, setLikeCount] = useState(Number(note.likeCount) || 0)
   const [liking,    setLiking]    = useState(false)
-  const [quizOpen,  setQuizOpen]  = useState(false)
 
   const lang      = note.languageId || note.language || ''
   const langLabel = LANG_MAP[lang] ?? lang
@@ -72,142 +70,129 @@ export default function PublicNoteCard({ note, onClick }) {
   }
 
   return (
-    <>
-      <div
-        onClick={onClick}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-        style={{
-          background: '#fff',
-          border: `1px solid ${hovered ? '#bfdbfe' : '#f1f5f9'}`,
-          borderRadius: 12,
-          overflow: 'hidden',
-          cursor: onClick ? 'pointer' : 'default',
-          boxShadow: hovered
-            ? '0 4px 16px rgba(37,99,235,0.10)'
-            : '0 1px 3px rgba(0,0,0,0.05)',
-          display: 'flex',
-          transition: 'all 0.18s ease',
-          transform: hovered ? 'translateY(-2px)' : 'none',
-        }}
-      >
-        {/* 언어 컬러 인디케이터 */}
-        <div style={{
-          width: 4, flexShrink: 0,
-          background: langStyle.color,
-          borderRadius: '12px 0 0 12px',
-        }} />
+    <div
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        background: '#fff',
+        border: `1px solid ${hovered ? '#bfdbfe' : '#f1f5f9'}`,
+        borderRadius: 12,
+        overflow: 'hidden',
+        cursor: onClick ? 'pointer' : 'default',
+        boxShadow: hovered
+          ? '0 4px 16px rgba(37,99,235,0.10)'
+          : '0 1px 3px rgba(0,0,0,0.05)',
+        display: 'flex',
+        transition: 'all 0.18s ease',
+        transform: hovered ? 'translateY(-2px)' : 'none',
+      }}
+    >
+      {/* 언어 컬러 인디케이터 */}
+      <div style={{
+        width: 4, flexShrink: 0,
+        background: langStyle.color,
+        borderRadius: '12px 0 0 12px',
+      }} />
 
-        <div style={{ flex: 1, padding: '14px 16px' }}>
-          {/* 헤더 */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
-            {langLabel && (
-              <span style={{
-                fontSize: 10, fontWeight: 700,
-                padding: '2px 9px', borderRadius: 99,
-                background: langStyle.bg, color: langStyle.color,
-                border: `1px solid ${langStyle.color}30`,
-                fontFamily: 'JetBrains Mono, monospace',
-              }}>
-                {langLabel}
-              </span>
-            )}
-            {note.fileName && (
-              <span style={{
-                fontSize: 10, color: '#64748b',
-                display: 'flex', alignItems: 'center', gap: 3,
-                fontFamily: 'JetBrains Mono, monospace',
-              }}>
-                <Code2 size={10} />
-                {note.fileName.split(/[\\/]/).pop()}
-              </span>
-            )}
-            {quiz && (
-              <button
-                onClick={e => { e.stopPropagation(); setQuizOpen(true) }}
-                style={{
-                  marginLeft: 'auto',
-                  fontSize: 9, fontWeight: 700, padding: '2px 8px',
-                  borderRadius: 99, background: '#fffbeb',
-                  color: '#d97706', border: '1px solid #fde68a',
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3,
-                }}
-              >
-                <Zap size={8} fill="#d97706" /> 퀴즈 풀기
-              </button>
-            )}
-          </div>
-
-          {/* 코드 미리보기 */}
-          <div style={{
-            background: hovered ? '#f0f7ff' : '#f8fafc',
-            border: `1px solid ${hovered ? '#dbeafe' : '#f1f5f9'}`,
-            borderRadius: 8, padding: '9px 12px', marginBottom: 10,
-            fontSize: 11, color: '#334155', lineHeight: 1.7,
-            fontFamily: 'JetBrains Mono, monospace',
-            overflow: 'hidden',
-            maxHeight: hovered ? 100 : 70,
-            transition: 'max-height 0.25s ease, background 0.18s',
-            whiteSpace: 'pre-wrap', wordBreak: 'break-all',
-          }}>
-            {codePreview || '코드 없음'}
-          </div>
-
-          {/* 주석 미리보기 */}
-          {note.comment && (
-            <div style={{
-              fontSize: 12, color: '#475569', lineHeight: 1.6,
-              marginBottom: 10, overflow: 'hidden', textOverflow: 'ellipsis',
-              display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+      <div style={{ flex: 1, padding: '14px 16px' }}>
+        {/* 헤더 */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
+          {langLabel && (
+            <span style={{
+              fontSize: 10, fontWeight: 700,
+              padding: '2px 9px', borderRadius: 99,
+              background: langStyle.bg, color: langStyle.color,
+              border: `1px solid ${langStyle.color}30`,
+              fontFamily: 'JetBrains Mono, monospace',
             }}>
-              {note.comment}
+              {langLabel}
+            </span>
+          )}
+          {note.fileName && (
+            <span style={{
+              fontSize: 10, color: '#64748b',
+              display: 'flex', alignItems: 'center', gap: 3,
+              fontFamily: 'JetBrains Mono, monospace',
+            }}>
+              <Code2 size={10} />
+              {note.fileName.split('/').pop()}
+            </span>
+          )}
+          {/* 빈칸 퀴즈 배지 */}
+          {quiz && (
+            <span style={{
+              fontSize: 9, fontWeight: 700, padding: '2px 8px',
+              borderRadius: 99, background: '#fffbeb',
+              color: '#d97706', border: '1px solid #fde68a',
+              marginLeft: 'auto',
+            }}>
+              빈칸 퀴즈
+            </span>
+          )}
+        </div>
+
+        {/* 코드 미리보기 */}
+        <div style={{
+          background: hovered ? '#f0f7ff' : '#f8fafc',
+          border: `1px solid ${hovered ? '#dbeafe' : '#f1f5f9'}`,
+          borderRadius: 8, padding: '9px 12px', marginBottom: 10,
+          fontSize: 11, color: '#334155', lineHeight: 1.7,
+          fontFamily: 'JetBrains Mono, monospace',
+          overflow: 'hidden',
+          maxHeight: hovered ? 100 : 70,
+          transition: 'max-height 0.25s ease, background 0.18s',
+          whiteSpace: 'pre-wrap', wordBreak: 'break-all',
+        }}>
+          {codePreview || '코드 없음'}
+        </div>
+
+        {/* 주석 미리보기 */}
+        {note.comment && (
+          <div style={{
+            fontSize: 12, color: '#475569', lineHeight: 1.6,
+            marginBottom: 10, overflow: 'hidden', textOverflow: 'ellipsis',
+            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+          }}>
+            {note.comment}
+          </div>
+        )}
+
+        {/* 푸터 */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {note.authorNickname && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#64748b' }}>
+              <User size={11} />
+              {note.authorNickname}
             </div>
           )}
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+            {/* 좋아요 버튼 */}
+            <button
+              onClick={handleLike}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 4,
+                background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                fontSize: 11, color: liked ? '#ef4444' : '#94a3b8',
+                transition: 'color 0.15s',
+              }}
+            >
+              <Heart
+                size={13}
+                fill={liked ? '#ef4444' : 'none'}
+                color={liked ? '#ef4444' : '#94a3b8'}
+                style={{ transition: 'all 0.15s' }}
+              />
+              {likeCount > 0 && likeCount}
+            </button>
 
-          {/* 푸터 */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            {note.authorNickname && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#64748b' }}>
-                <User size={11} />
-                {note.authorNickname}
-              </div>
-            )}
-            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
-              {/* 좋아요 버튼 */}
-              <button
-                onClick={handleLike}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 4,
-                  background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                  fontSize: 11, color: liked ? '#ef4444' : '#94a3b8',
-                  transition: 'color 0.15s',
-                }}
-              >
-                <Heart
-                  size={13}
-                  fill={liked ? '#ef4444' : 'none'}
-                  color={liked ? '#ef4444' : '#94a3b8'}
-                  style={{ transition: 'all 0.15s' }}
-                />
-                {likeCount > 0 && likeCount}
-              </button>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#94a3b8' }}>
-                <Clock size={10} />
-                {new Date(note.createdAt).toLocaleDateString('ko-KR')}
-              </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#94a3b8' }}>
+              <Clock size={10} />
+              {new Date(note.createdAt).toLocaleDateString('ko-KR')}
             </div>
           </div>
         </div>
       </div>
-
-      {quizOpen && quiz && (
-        <QuizModal
-          quiz={quiz}
-          onClose={() => setQuizOpen(false)}
-          reviewEnabled={false}
-        />
-      )}
-    </>
+    </div>
   )
 }
